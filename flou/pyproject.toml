@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flou"
+version = "0.1.0"
+description = "The framework for LLM-powered apps"
+authors = [
+    { name = "Iván Raskovsky", email = "raskovsky+flou@gmail.com" }
+]
+readme = "README.md"  # Assuming you have a README.md file
+# license = { file = "LICENSE" }  # Assuming you have a LICENSE file
+
+dependencies = [
+    "fastapi[standard]",
+    "uvicorn",
+    "pydantic-settings",
+    "celery",
+    "python-dotenv",
+    "pytest",
+    "jsonpatch",
+    "redis",
+    "typer",
+    "websockets",
+    "broadcaster[redis]",
+    "parse",
+    "watchdog",
+    "sqlalchemy[asyncio]",
+    "alembic",
+    "psycopg",
+]
+
+scripts = { flou = "flou.cli:app" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]

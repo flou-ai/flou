@@ -1,0 +1,33 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: flou.Dockerfile
+    image: !reset null
+    volumes:
+        - ./flou:/code/flou
+        - ./flou/flou/app:/code/flou/flou/app
+    env_file: !reset null
+  engine:
+    build:
+      context: .
+      dockerfile: flou.Dockerfile
+    image: !reset null
+    volumes:
+        - ./flou:/code/flou
+        - ./flou/flou/app:/code/flou/flou/app
+    env_file: !reset null
+  studio:
+    build:
+      context: .
+      dockerfile: studio.Dockerfile
+    image: !reset null
+    volumes:
+        - ./studio:/code
+  docs:
+    build:
+      context: .
+      dockerfile: docs.Dockerfile
+    image: !reset null
+    volumes:
+        - ./docs:/docs

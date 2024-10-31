@@ -1,0 +1,2 @@
+# use the requirements from the pyproject.toml file
+-e .

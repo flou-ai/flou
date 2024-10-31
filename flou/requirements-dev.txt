@@ -1,0 +1,3 @@
+nodeenv
+pytest-env
+-r requirements.txt

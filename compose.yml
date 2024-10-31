@@ -1,0 +1,91 @@
+volumes:
+  postgres-volume:
+  site-packages:
+
+services:
+  engine:
+    image: "${REGISTRY-}flou/flou:latest"
+    depends_on:
+      - db
+      - cache
+    restart: on-failure
+    command: ["flou", "run", "engine"]
+    volumes:
+      - .:/code/app
+      - site-packages:/usr/local/lib/python3.11/site-packages
+    env_file:
+      - "${RESOURCES_DIR-docker}/.env.docker"
+      - path: .env
+        required: false
+    healthcheck:
+      test: celery -A flou.executor.celery.app status || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 10
+  api:
+    image: "${REGISTRY-}flou/flou:latest"
+    environment:
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_started
+      cache:
+        condition: service_started
+      engine:
+        condition: service_healthy
+    restart: on-failure
+    volumes:
+      - .:/code/app
+      - site-packages:/usr/local/lib/python3.11/site-packages
+    env_file:
+      - "${RESOURCES_DIR-docker}/.env.docker"
+      - path: .env
+        required: false
+  studio:
+    image: "${REGISTRY-}flou/studio:latest"
+    # env_file: studio/.env.docker
+    environment:
+      - PORT=8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      - api
+      - db
+      - cache
+      - engine
+    restart: on-failure
+  db:
+    image: postgres
+    ports:
+      - "54320:5432"
+    expose:
+    - "5432"
+    volumes:
+      - type: volume
+        source: postgres-volume
+        target: /var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      default:
+        aliases:
+          - db
+  cache:
+    image: redis:6.2-alpine
+    restart: on-failure
+    expose:
+      - '6379'
+    ports:
+      - '6379:6379'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+  docs:
+    image: "${REGISTRY-}flou/docs:latest"
+    restart: on-failure
+    ports:
+      - "8002:8002"

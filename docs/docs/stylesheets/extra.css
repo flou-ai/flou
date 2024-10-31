@@ -1,0 +1,17 @@
+figure.side-by-side {
+  display: flex;
+  flex-wrap: wrap; /* Allows multiple rows of images if needed */
+  justify-content: center; /* Centers all images within the figure */
+  align-items: center;
+}
+
+figure.side-by-side img {
+  display: block;
+  margin: 10px;
+}
+
+figure.side-by-side figcaption {
+  flex-basis: 100%; /* Ensure figcaption takes full width */
+  margin-top: 10px;
+  text-align: center;
+}

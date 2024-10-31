@@ -1,0 +1,85 @@
+site_name: Flou
+site_dir: build
+site_url: http://localhost:8002
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.footer
+    - content.tabs.link
+    - navigation.expand
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tracking
+    - navigation.path
+    - navigation.indexes
+
+extra:
+  generator: false
+  social:
+  - icon: material/web
+    link: https://flou.ai
+    name: Flou webpage
+
+markdown_extensions:
+  # code highlighting
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.keys
+
+  - toc:
+      permalink: true
+
+  - admonition
+  - pymdownx.details
+
+  # images
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+  - open-in-new-tab  # noqa
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - getting-started/first-network.md
+    - getting-started/studio.md
+  # - Tutorial:
+  #   - tutorial/index.md
+  #   - "Part 1: creating a PoC": tutorial/part-1.md
+  - Documentation:
+    - documentation/index.md
+    - Agents Network:
+      - documentation/network/index.md
+      - documentation/network/states-machines.md
+      - documentation/network/nesting.md
+      - documentation/network/concurrency.md
+    - Studio:
+      - documentation/studio/index.md
+    - Orchestration Engine:
+      - documentation/engine/index.md
+      - documentation/engine/api-cli.md
+      - documentation/engine/websockets.md
+      - documentation/engine/dependencies.md
+    # - Advanced:
+    #   - documentation/advanced/architecture.md
+    - Contributing:
+      - documentation/contributing/index.md
+      - documentation/contributing/dev-environment.md
+      - documentation/contributing/docker-registry.md
