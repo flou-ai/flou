@@ -25,7 +25,7 @@ export const routes = [
     { name: 'Patterns Hub', path: '/patterns-hub', icon: BracketsAngle, disabled: true },
     { name: 'Learn', title: true },
     { name: 'Documentation', path: 'http://localhost:8002/documentation', icon: BookOpenText },
-    { name: 'Github', path: 'https://github.com/flou-ai/flou-private/', icon: GithubLogo },
+    { name: 'Github', path: 'https://github.com/flou-ai/flou/', icon: GithubLogo },
     { name: 'Bottom', section: true },
     { name: 'My profile', path: '/profile', icon: User, disabled: true, showInNav: false },
 ];

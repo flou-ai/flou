@@ -39,7 +39,7 @@ Flou's own settings can be overridden by `.env` files. For example you can set
 `APP_NAME` to modify the project's name that will appear in the Studio.
 
 You can see all the available settings in
-[flou/conf.py](https://github.com/flou-ai/flou-private/blob/main/flou/flou/conf.py).
+[flou/conf.py](https://github.com/flou-ai/flou/blob/main/flou/flou/conf.py).
 
 For nested configs use `__` (double underscore), for example `DATABASE__NAME`.
 

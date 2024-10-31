@@ -6,11 +6,11 @@ the dev team.
 ## Bugs, feature requests, help and chat
 
 For bug reporting and feature requests please use the [github
-issues](https://github.com/flou-ai/flou-private/issues). Before creating a new
+issues](https://github.com/flou-ai/flou/issues). Before creating a new
 issue please be sure to search among existing issues.
 
 For questions and help please use the [github
-discussions](https://github.com/flou-ai/flou-private/discussions).
+discussions](https://github.com/flou-ai/flou/discussions).
 
 For a quick chat, join us on our [discord
 server](https://discord.gg/STB6RRraVr).
