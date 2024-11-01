@@ -5,7 +5,7 @@ install all the dependencies by following these steps.
 
 1. Clone this repo:
 
-        % git clone https://github.com/flou-ai/flou-private/ flou
+        % git clone https://github.com/flou-ai/flou/
         % cd flou
 
 1. Create a python virtual environment:

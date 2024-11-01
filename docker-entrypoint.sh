@@ -14,4 +14,10 @@ else
     echo "No project's requirements.txt found. Skipping..."
 fi
 
+# run migrations
+cd /code/flou
+alembic upgrade head
+
+cd /code/app
+
 exec "$@"
