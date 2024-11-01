@@ -13,6 +13,8 @@ theme:
     - navigation.tracking
     - navigation.path
     - navigation.indexes
+  icon:
+    repo: fontawesome/brands/git-alt
 
 extra:
   generator: false
@@ -53,6 +55,10 @@ plugins:
 
 extra_css:
   - stylesheets/extra.css
+
+repo_url: https://github.com/flou-ai/flou
+repo_name: flou-ai/flou
+edit_uri: edit/main/docs/
 
 nav:
   - Home: index.md

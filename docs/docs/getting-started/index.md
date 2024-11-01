@@ -14,12 +14,6 @@ already present.
         % source venv/bin/activate
         (venv) % pip install flou
 
-    !!! warning "Flou hasn't been released in Pypi yet"
-
-        To install Flou you will need access to the `flou` repo and point to it:
-
-            pip install -e "git+https://github.com/flou-ai/flou/#egg=flou&subdirectory=flou"
-
 1. Create an `app.py` file, the entrypoint for your Flou project and a
 `requirements.txt` file for your project dependencies:
 
