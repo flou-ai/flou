@@ -1,3 +1,4 @@
 flou.egg-info
 build
 *.sqlite3
+dist/

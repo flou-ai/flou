@@ -4,7 +4,7 @@ volumes:
 
 services:
   engine:
-    image: "${REGISTRY-}flou/flou:latest"
+    image: "${REGISTRY-}flouai/flou:latest"
     depends_on:
       - db
       - cache
@@ -23,7 +23,7 @@ services:
       timeout: 10s
       retries: 10
   api:
-    image: "${REGISTRY-}flou/flou:latest"
+    image: "${REGISTRY-}flouai/flou:latest"
     environment:
       - PORT=8000
     ports:
@@ -44,7 +44,7 @@ services:
       - path: .env
         required: false
   studio:
-    image: "${REGISTRY-}flou/studio:latest"
+    image: "${REGISTRY-}flouai/studio:latest"
     # env_file: studio/.env.docker
     environment:
       - PORT=8001
@@ -85,7 +85,7 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
 
   docs:
-    image: "${REGISTRY-}flou/docs:latest"
+    image: "${REGISTRY-}flouai/docs:latest"
     restart: on-failure
     ports:
       - "8002:8002"

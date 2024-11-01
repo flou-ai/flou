@@ -79,7 +79,10 @@ nav:
       - documentation/engine/dependencies.md
     # - Advanced:
     #   - documentation/advanced/architecture.md
+    - Quicksheet: documentation/quicksheet.md
+    - Changelog: documentation/changelog.md
     - Contributing:
       - documentation/contributing/index.md
       - documentation/contributing/dev-environment.md
       - documentation/contributing/docker-registry.md
+      - documentation/contributing/release-procedure.md

@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flou"
-version = "0.1.0"
+version = "0.1.0-dev.1"
 description = "The framework for LLM-powered apps"
 authors = [
     { name = "Iván Raskovsky", email = "raskovsky+flou@gmail.com" }
 ]
-readme = "README.md"  # Assuming you have a README.md file
-# license = { file = "LICENSE" }  # Assuming you have a LICENSE file
+readme = "README.md"
+license = { file = "LICENSE" }
 
 dependencies = [
     "fastapi[standard]",
@@ -32,6 +32,13 @@ dependencies = [
 ]
 
 scripts = { flou = "flou.cli:app" }
+
+[project.urls]
+Homepage = "https://flou.ai"
+Documentation = "https://flou.ai/"
+Repository = "https://github.com/flou-ai/flou.git"
+Issues = "https://github.com/flou-ai/flou/issues"
+Changelog = "https://flou.ai/documentation/changelog"
 
 [tool.setuptools.packages.find]
 where = ["."]

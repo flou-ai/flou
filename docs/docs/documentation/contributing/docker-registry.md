@@ -20,13 +20,13 @@ To build, tag and push the images use:
 ``` zsh
 % docker compose -f compose.yml -f compose.dev.yml build
 
-% docker tag flou-engine:latest flou/flou:latest
-% docker tag flou-studio:latest flou/studio:latest
-% docker tag flou-docs:latest flou/docs:latest
+% docker tag flou-engine:latest flouai/flou:latest
+% docker tag flou-studio:latest flouai/studio:latest
+% docker tag flou-docs:latest flouai/docs:latest
 
-% docker push flou/flou:latest
-% docker push flou/studio:latest
-% docker push flou/docs:latest
+% docker push flouai/flou:latest
+% docker push flouai/studio:latest
+% docker push flouai/docs:latest
 ```
 
 ## Creating a local docker registry for testing
@@ -67,20 +67,20 @@ pull from the local repository.
 
 ``` zsh
 % docker compose -f compose.yml -f compose.dev.yml build
-% docker tag flou-engine:latest localhost:5001/flou/flou:latest
-% docker push localhost:5001/flou/flou:latest
-% docker pull localhost:5001/flou/flou
+% docker tag flou-engine:latest localhost:5001/flouai/flou:latest
+% docker push localhost:5001/flouai/flou:latest
+% docker pull localhost:5001/flouai/flou
 ```
 
 The same can be done for the studio changing `engine` for `studio` or `docs`.
 
 ``` zsh
-% docker tag flou-engine:latest localhost:5001/flou/flou:latest
-% docker tag flou-studio:latest localhost:5001/flou/studio:latest
-% docker tag flou-docs:latest localhost:5001/flou/docs:latest
-% docker push localhost:5001/flou/flou:latest
-% docker push localhost:5001/flou/studio:latest
-% docker push localhost:5001/flou/docs:latest
+% docker tag flou-engine:latest localhost:5001/flouai/flou:latest
+% docker tag flou-studio:latest localhost:5001/flouai/studio:latest
+% docker tag flou-docs:latest localhost:5001/flouai/docs:latest
+% docker push localhost:5001/flouai/flou:latest
+% docker push localhost:5001/flouai/studio:latest
+% docker push localhost:5001/flouai/docs:latest
 ```
 
 To the use this images in `flou compose` add the `REGISTRY` envvar to point to
