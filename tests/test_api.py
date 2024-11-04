@@ -9,7 +9,7 @@ from flou.registry import registry
 client = TestClient(app)
 
 
-def test_list():
+def test_list(session):
     from .test_ltm import PayloadLTM
     ltm = PayloadLTM()
     id = ltm.start()
@@ -32,7 +32,7 @@ def test_list():
     assert id not in [ltm['id'] for ltm in response.json()]
     assert copy_id in [ltm['id'] for ltm in response.json()]
 
-def test_register():
+def test_register(session):
 
     from tests.test_ltm import Root
     registry._registry = []
@@ -44,7 +44,7 @@ def test_register():
     assert response.json() == [{"fqn": "tests.test_ltm.Root", "name": "root"}]
 
 
-def test_create_ltm():
+def test_create_ltm(session):
     ltm_creation_data = {
         "fqn": "tests.test_ltm.Root",
         # "kwargs": {"some": "data"}
@@ -54,11 +54,11 @@ def test_create_ltm():
 
     id = response.json()['id']
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
     assert db.load_ltm(id).id == id
 
 
-def test_copy_ltm():
+def test_copy_ltm(session):
     from .test_ltm import PayloadLTM
     ltm = PayloadLTM()
     id = ltm.start()
@@ -68,12 +68,12 @@ def test_copy_ltm():
 
     copy_id = response.json()['copy_id']
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
     copy = db.load_ltm(copy_id, playground=True)
     assert copy._source_id == id
 
 
-def test_transition():
+def test_transition(session):
     from .test_ltm import PayloadLTM
     ltm = PayloadLTM()
     id = ltm.start()
@@ -88,12 +88,12 @@ def test_transition():
 
     assert response.json() == True
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
     loaded_ltm = db.load_ltm(id)
     assert loaded_ltm._get_ltm("payload.payload_state").state["some"] == "data"
 
 
-def test_rollback():
+def test_rollback(session):
     from .test_ltm import PayloadLTM
     ltm = PayloadLTM()
     id = ltm.start()
@@ -110,13 +110,13 @@ def test_rollback():
     assert response.json() == True
 
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
     loaded_ltm = db.load_ltm(id, snapshots=True, rollbacks=True)
     assert len(loaded_ltm._snapshots) == 3
     assert len(loaded_ltm._rollbacks) == 1
 
 
-def test_replay():
+def test_replay(session):
     from .test_ltm import PayloadLTM
     ltm = PayloadLTM()
     id = ltm.start()
@@ -133,7 +133,7 @@ def test_replay():
     assert response.json() == True
 
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
     loaded_ltm = db.load_ltm(id, snapshots=True, rollbacks=True)
     assert len(loaded_ltm._snapshots) == 5
     assert len(loaded_ltm._rollbacks) == 1

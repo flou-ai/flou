@@ -51,13 +51,13 @@ class ConcurrentJoinLTM(LTM):
     ]
 
 
-def test_join():
+def test_join(session):
 
     root = ConcurrentJoinLTM()
     root.start()
 
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
 
     done_LTM = db.load_ltm(root.id)
 

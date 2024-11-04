@@ -6,8 +6,8 @@ from flou.database import get_db, get_session
 from flou.database.models import Error
 
 
-def test_log_retry():
-    db = get_db()
+def test_log_retry(session):
+    db = get_db(session)
 
     item_id = uuid.uuid4()
     ltm_id = 123
@@ -20,9 +20,9 @@ def test_log_retry():
     except Exception as e:
         db.log_retry(item_id, ltm_id, reason, item, e, retrying=True)
 
-    with get_session() as session:
     # Now, check the Error table
-        error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+    error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+
     assert error_record is not None
     assert error_record.id == item_id
     assert error_record.ltm_id == ltm_id
@@ -45,8 +45,7 @@ def test_log_retry():
         db.log_retry(item_id, ltm_id, reason, item, e, retrying=True)
 
     # Now, check the Error table
-    with get_session() as session:
-        error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+    error_record = session.query(Error).filter_by(id=item_id).one_or_none()
     assert error_record is not None
     assert error_record.id == item_id
     assert error_record.ltm_id == ltm_id
@@ -65,9 +64,9 @@ def test_log_retry():
 
     assert retries[0]['time'] != retries[1]['time']
 
-def test_set_error():
+def test_set_error(session):
 
-    db = get_db()
+    db = get_db(session)
     item_id = uuid.uuid4()
 
     # create an Error
@@ -77,21 +76,19 @@ def test_set_error():
         db.log_retry(item_id, 123, 'execute', {}, e, retrying=True)
 
     # check the Error table for retrying
-    with get_session() as session:
-        error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+    error_record = session.query(Error).filter_by(id=item_id).one_or_none()
     assert error_record.retrying == True
 
     # set the error
     db.set_stop_retrying(item_id)
 
     # check the Error table for retrying
-    with get_session() as session:
-        error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+    error_record = session.query(Error).filter_by(id=item_id).one_or_none()
     assert error_record.retrying == False
 
-def test_set_success():
+def test_set_success(session):
 
-    db = get_db()
+    db = get_db(session)
     item_id = uuid.uuid4()
 
     # create an Error
@@ -103,14 +100,13 @@ def test_set_success():
     db.set_success(item_id)
 
     # check the Error table for retrying
-    with get_session() as session:
-        error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+    error_record = session.query(Error).filter_by(id=item_id).one_or_none()
     assert error_record.retrying == False
     assert error_record.success == True
 
-def test_set_retrying():
+def test_set_retrying(session):
 
-    db = get_db()
+    db = get_db(session)
     item_id = uuid.uuid4()
 
     # create an Error
@@ -122,6 +118,5 @@ def test_set_retrying():
     db.set_retrying(item_id)
 
     # check the Error table for retrying
-    with get_session() as session:
-        error_record = session.query(Error).filter_by(id=item_id).one_or_none()
+    error_record = session.query(Error).filter_by(id=item_id).one_or_none()
     assert error_record.retrying == True

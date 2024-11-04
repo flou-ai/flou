@@ -29,7 +29,7 @@ class Root(LTM):
     init = [Child1, Child2]
 
 
-def test_namespaces():
+def test_namespaces(session):
     root = Root()
     root.start()
 
@@ -41,7 +41,7 @@ def test_namespaces():
 
     from flou.database import get_db
 
-    db = get_db()
+    db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert convert_lists_to_sets(doneLTM._state) == convert_lists_to_sets(

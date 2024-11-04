@@ -21,9 +21,17 @@ redis = Redis(host=settings.redis.host, port=settings.redis.port, db=settings.re
 
 class BaseDatabase:
 
+    def __init__(self, session=None, *args, **kwargs):
+        self.session = session
+
+    def get_session(self):
+        if self.session:
+            return self.session
+        return get_session()
+
     def list_ltms(self, playground=False):
 
-        with get_session() as session:
+        with self.get_session() as session:
             ltms = (
                 session.query(
                     LTM.id,
@@ -53,7 +61,7 @@ class BaseDatabase:
             item={"payload": payload, "params": params, "playground": playground},
         )
 
-        with get_session() as session:
+        with self.get_session() as session:
             if not ltm.id:
                 new_ltm = LTM(
                     name=ltm.name,
@@ -99,7 +107,7 @@ class BaseDatabase:
         return getattr(importlib.import_module(module), class_name)
 
     def load_ltm(self, pk, snapshots=False, rollbacks=False, playground=False):
-        with get_session() as session:
+        with self.get_session() as session:
             columns = [
                 LTM.id,
                 LTM.fqn,
@@ -137,7 +145,7 @@ class BaseDatabase:
         return ltm
 
     def copy_ltm(self, pk):
-        with get_session() as session:
+        with self.get_session() as session:
             ltm = session.get(LTM, pk)
             new_ltm = LTM(
                 name=ltm.name,
@@ -189,7 +197,7 @@ class BaseDatabase:
             "ltm_id": ltm_id,
         }
 
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update_query, values
             )
@@ -215,7 +223,7 @@ class BaseDatabase:
         # values.update({f"value{i}": value for i, (key, value) in enumerate(updates)})
         sql_updates.update(snapshots=LTM.snapshots + [snapshot])
 
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -231,7 +239,7 @@ class BaseDatabase:
             # key = ARRAY([path_element for path_element in key], String)
             state_value = func.jsonb_set(state_value, key, cast(value, JSONB))
 
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -306,7 +314,7 @@ class BaseDatabase:
         return recreated_state
 
     def _rollback(self, ltm_id, new_state, new_snapshots, new_rollback):
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -393,7 +401,7 @@ class BaseDatabase:
     def _atomic_append(self, ltm_id, path, value):
         path_last_element = path + ["-1"]
 
-        with get_session() as session:
+        with self.get_session() as session:
             result = session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -424,7 +432,7 @@ class BaseDatabase:
         return result
 
     def _log_retry(self, item_id, ltm_id, reason, item, retry, retrying=True):
-        with get_session() as session:
+        with self.get_session() as session:
             result = session.execute(
                 insert(Error)
                 .values(
@@ -468,7 +476,7 @@ class BaseDatabase:
         """
         Updates an `Error` that has stopped retrying
         """
-        with get_session() as session:
+        with self.get_session() as session:
             result = session.execute(
                 update(Error).where(Error.id == item_id).values(retrying=False)
             )
@@ -481,7 +489,7 @@ class BaseDatabase:
         """
         If there was a previous error for this item_id set it as success
         """
-        with get_session() as session:
+        with self.get_session() as session:
             result = session.execute(
                 update(Error)
                 .where(Error.id == item_id)
@@ -495,7 +503,7 @@ class BaseDatabase:
         """
         Updates an `Error` that is starting to retry again
         """
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update(Error).where(Error.id == item_id).values(retrying=True)
             )
@@ -503,7 +511,7 @@ class BaseDatabase:
         self._broadcast_error(item_id)
 
     def _broadcast_error(self, item_id):
-        with get_session() as session:
+        with self.get_session() as session:
             error = session.get(Error, item_id)
         redis.publish(
             f"ltm:{error.ltm_id}:error",

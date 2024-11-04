@@ -23,14 +23,14 @@ class ConcurrentSubRootLTM(LTM):
     transitions = [{"from": Noop, "label": "start_{num}", "to": ConcurrentSubLTM}]
 
 
-def test_concurrent_sub_ltm():
+def test_concurrent_sub_ltm(session):
 
     root = ConcurrentSubRootLTM()
     root.start()
 
     from flou.database import get_db
 
-    db = get_db()
+    db = get_db(session)
 
     from flou.executor import get_executor
 
@@ -103,14 +103,14 @@ class MultipleConcurrentSubRootLTM(LTM):
     ]
 
 
-def test_multiple_concurrent_sub_ltm():
+def test_multiple_concurrent_sub_ltm(session):
 
     root = MultipleConcurrentSubRootLTM()
     root.start()
 
     from flou.database import get_db
 
-    db = get_db()
+    db = get_db(session)
 
     from flou.executor import get_executor
 
@@ -174,14 +174,14 @@ class MultipleConcurrentSubNestedRootLTM(LTM):
     ]
 
 
-def test_multiple_concurrent_sub_nested_ltm():
+def test_multiple_concurrent_sub_nested_ltm(session):
 
     root = MultipleConcurrentSubNestedRootLTM()
     root.start()
 
     from flou.database import get_db
 
-    db = get_db()
+    db = get_db(session)
 
     from flou.executor import get_executor
 
@@ -235,14 +235,14 @@ def test_multiple_concurrent_sub_nested_ltm():
     )
 
 
-def test_concurrent_instances_as_json():
+def test_concurrent_instances_as_json(session):
 
     root = MultipleConcurrentSubNestedRootLTM()
     root.start()
 
     from flou.database import get_db
 
-    db = get_db()
+    db = get_db(session)
     from flou.executor import get_executor
 
     executor = get_executor()

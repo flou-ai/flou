@@ -4,7 +4,7 @@ import json
 from typing import List
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query, Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import select, update
 
 
@@ -36,8 +36,6 @@ class LTM(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True  # Enable ORM mode
 
 @router.get("/ltm", response_model=List[LTM])
 async def list_ltms(
