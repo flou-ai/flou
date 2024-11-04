@@ -25,12 +25,12 @@ class ConcurrentLTM(LTM):
     ]
 
 
-def test_concurrent_arg():
+def test_concurrent_arg(session):
 
     root = ConcurrentLTM()
     root.start()
 
-    db = get_db()
+    db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 6
@@ -59,12 +59,12 @@ class MultipleConcurrentLTM(LTM):
     ]
 
 
-def test_multiple_concurrent_arg():
+def test_multiple_concurrent_arg(session):
 
     root = MultipleConcurrentLTM()
     root.start()
 
-    db = get_db()
+    db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 6
@@ -102,7 +102,7 @@ def test_multiple_concurrent_arg():
     root = MultipleConcurrentLTM()
     root.start()
 
-    db = get_db()
+    db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     executor = get_executor()

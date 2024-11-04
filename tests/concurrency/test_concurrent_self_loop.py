@@ -18,7 +18,7 @@ class ConcurrentWithLoopLTM(LTM):
     ]
 
 
-def test_concurrent_self_loop():
+def test_concurrent_self_loop(session):
 
     root = ConcurrentWithLoopLTM()
     root.start()
@@ -29,7 +29,7 @@ def test_concurrent_self_loop():
     executor.transition(root, "start_{kwarg}", params=[{'kwarg': '2'}])
 
     from flou.database import get_db
-    db = get_db()
+    db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 9

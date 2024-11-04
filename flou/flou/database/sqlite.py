@@ -6,7 +6,6 @@ from sqlalchemy.dialects.sqlite import JSON, insert
 from redis import Redis
 
 from flou.conf import settings
-from . import get_session
 from .base import BaseDatabase
 from .models import LTM, Error
 from .utils import json_dumps
@@ -18,7 +17,7 @@ redis = Redis(host=settings.redis.host, port=settings.redis.port, db=settings.re
 class SQLiteDatabase(BaseDatabase):
     def list_ltms(self, playground=False):
 
-        with get_session() as session:
+        with self.get_session() as session:
             ltms = (
                 session.query(
                     LTM.id,
@@ -42,7 +41,7 @@ class SQLiteDatabase(BaseDatabase):
             key = path.split(".")
             update_pairs.extend([f"$.{'.'.join(key)}", func.JSON(json_dumps(value))])
 
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -56,7 +55,7 @@ class SQLiteDatabase(BaseDatabase):
             session.commit()
 
     def _rollback(self, ltm_id, new_state, new_snapshots, new_rollback):
-        with get_session() as session:
+        with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -73,7 +72,7 @@ class SQLiteDatabase(BaseDatabase):
     def _atomic_append(self, ltm_id, path, value):
         key = f"$.{'.'.join(path)}"
 
-        with get_session() as session:
+        with self.get_session() as session:
             result = session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
@@ -89,7 +88,7 @@ class SQLiteDatabase(BaseDatabase):
         return result
 
     def _log_retry(self, item_id, ltm_id, reason, item, retry, retrying=True):
-        with get_session() as session:
+        with self.get_session() as session:
             result = session.execute(
                 insert(Error)
                 .values(

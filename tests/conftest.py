@@ -2,8 +2,9 @@ from pathlib import Path
 import pytest
 from alembic.config import Config
 from alembic import command
+from sqlalchemy.orm import Session
 
-from flou.database import get_session
+from flou.database import engine
 
 @pytest.fixture(scope='session')
 def alembic_config():
@@ -28,13 +29,17 @@ def setup_database(alembic_config):
     # Optionally, you can run downgrades or clean up here
     # For SQLite, since the database file is temporary, it will be deleted automatically
 
-@pytest.fixture(scope='function')
-def db_session(setup_database):
+@pytest.fixture(scope='function', autouse=True)
+def session(setup_database):
     """
     Create a new database session for a test.
     Rollback any changes after the test completes.
     """
-    session = get_session()
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
+
     yield session
+
     session.rollback()
     session.close()

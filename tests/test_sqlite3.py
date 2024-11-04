@@ -14,7 +14,7 @@ class MyLTM(LTM):
         return initial_state
 
 
-def test_atomic_update():
+def test_atomic_update(session):
 
     root = MyLTM()
     id = root.start()
@@ -24,12 +24,12 @@ def test_atomic_update():
     assert root.state["my_list"] == ["first", "second"]
 
 
-def test_copy():
+def test_copy(session):
 
     root = MyLTM()
     id = root.start()
 
-    db = get_db()
+    db = get_db(session)
 
     copy_id = db.copy_ltm(id)
 

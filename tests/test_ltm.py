@@ -29,7 +29,7 @@ class Root(LTM):
     ],
     indirect=True,
 )
-def test_initial_and_get_state(patch_settings):
+def test_initial_and_get_state(patch_settings, session):
 
     root = Root()
     root._init_ltms()
@@ -39,9 +39,9 @@ def test_initial_and_get_state(patch_settings):
     assert root._sub_ltms["child"].state["test"] == "test"
 
 
-def test_update_state(db_session):
+def test_update_state(session):
 
-    db = get_db()
+    db = get_db(session)
 
     root = Root()
     id = root.start()
@@ -101,12 +101,12 @@ class LinearLTM(LTM):
     transitions = [{"from": Start, "label": "go", "to": End}]
 
 
-def test_transition():
+def test_transition(session):
     linear = LinearLTM()
     id = linear.start()
 
 
-    db = get_db()
+    db = get_db(session)
     linear_loaded = db.load_ltm(id)
 
     assert linear_loaded.state["_status"] == "active"
@@ -120,7 +120,7 @@ class NestedLTM(LTM):
     transitions = [{"from": Start, "to": LinearLTM, "label": "go"}]
 
 
-def test_structure():
+def test_structure(session):
     ltm = LinearLTM()
     structure = ltm.as_json()
     # as lists are not ordered, we need to convert them to sets
@@ -186,7 +186,7 @@ def test_structure():
     )
 
 
-def test_snapshots_queues():
+def test_snapshots_queues(session):
     ltm = NestedLTM()
     id = ltm.start()
 
@@ -270,7 +270,7 @@ def test_payload():
     assert ltm.state["payload_state"]["other_kwarg"] == False
 
 
-def test_rollback():
+def test_rollback(session):
     ltm = PayloadLTM()
     ltm.start()
     init_state = deepcopy(ltm._state)
@@ -283,7 +283,7 @@ def test_rollback():
     executor.transition(ltm, "go", payload={"other_kwarg": False})
 
 
-    db = get_db()
+    db = get_db(session)
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
     assert len(ltm_final._snapshots) == 7
@@ -317,7 +317,7 @@ def test_rollback():
     assert ltm_rollback1._state == init_state
 
 
-def test_recover_rollback():
+def test_recover_rollback(session):
     # create an LTM
     ltm = PayloadLTM()
     ltm.start()
@@ -333,7 +333,7 @@ def test_recover_rollback():
     executor.transition(ltm, "go", payload={"other_kwarg": False})
 
 
-    db = get_db()
+    db = get_db(session)
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
     # rollback to after first transition/execution
@@ -353,7 +353,7 @@ def test_recover_rollback():
     assert ltm_rollback._state == ltm_final._state
 
 
-def test_replay():
+def test_replay(session):
     ltm = PayloadLTM()
     ltm.start()
 
@@ -375,7 +375,7 @@ def test_replay():
     assert len(ltm_final._rollbacks) == 1
     assert ltm_final._state == middle_state
 
-def test_restart():
+def test_restart(session):
 
 
     db = get_db()
@@ -423,7 +423,7 @@ class RootWithNone(LTM):
         initial_state["test"] = None
         return initial_state
 
-def test_store_none_transition():
+def test_store_none_transition(session):
     root = RootWithNone()
     root.start()
 
