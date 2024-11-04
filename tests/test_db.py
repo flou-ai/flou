@@ -4,13 +4,16 @@ import pytest
 
 from flou.database import get_db, get_session
 from flou.database.models import Error
+from .test_ltm import Child
 
 
 def test_log_retry(session):
     db = get_db(session)
 
+    ltm = Child()
+    ltm_id = ltm.start()
+
     item_id = uuid.uuid4()
-    ltm_id = 123
     reason = 'Test reason'
     item = {'key': 'value'}
 
@@ -69,11 +72,15 @@ def test_set_error(session):
     db = get_db(session)
     item_id = uuid.uuid4()
 
+    ltm = Child()
+    ltm_id = ltm.start()
+
+
     # create an Error
     try:
         raise ValueError
     except Exception as e:
-        db.log_retry(item_id, 123, 'execute', {}, e, retrying=True)
+        db.log_retry(item_id, ltm_id, 'execute', {}, e, retrying=True)
 
     # check the Error table for retrying
     error_record = session.query(Error).filter_by(id=item_id).one_or_none()
@@ -91,11 +98,14 @@ def test_set_success(session):
     db = get_db(session)
     item_id = uuid.uuid4()
 
+    ltm = Child()
+    ltm_id = ltm.start()
+
     # create an Error
     try:
         raise ValueError
     except Exception as e:
-        db.log_retry(item_id, 123, 'execute', {}, e, retrying=True)
+        db.log_retry(item_id, ltm_id, 'execute', {}, e, retrying=True)
 
     db.set_success(item_id)
 
@@ -109,11 +119,14 @@ def test_set_retrying(session):
     db = get_db(session)
     item_id = uuid.uuid4()
 
+    ltm = Child()
+    ltm_id = ltm.start()
+
     # create an Error
     try:
         raise ValueError
     except Exception as e:
-        db.log_retry(item_id, 123, 'execute', {}, e, retrying=False)
+        db.log_retry(item_id, ltm_id, 'execute', {}, e, retrying=False)
 
     db.set_retrying(item_id)
 
