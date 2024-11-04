@@ -22,6 +22,8 @@ jobs:
         # Docker Hub image
         image: redis
         # Set health checks to wait until redis has started
+        ports:
+          - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -48,7 +50,7 @@ jobs:
         run: |
           pytest --disable-warnings
         env:
-          DATABASE__HOST: postgres
+          DATABASE__HOST: localhost
           DATABASE__PORT: 5432
-          EXECUTOR__HOST: redis
+          EXECUTOR__HOST: localhost
           EXECUTOR__PORT: 6379
