@@ -1,3 +1,5 @@
+import importlib
+import pkgutil
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine
@@ -20,6 +22,17 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from flou.database.models import Base
 target_metadata = Base.metadata
+
+# Function to dynamically import all `models.py` and `models/` from apps
+def import_all_models():
+    root_package = 'flou'
+
+    package = importlib.import_module(root_package)
+    for importer, modname, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
+        if modname.endswith('.models'):
+            importlib.import_module(modname)
+
+import_all_models()
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
