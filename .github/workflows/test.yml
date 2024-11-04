@@ -28,12 +28,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    env:
-      DATABASE__HOST: postgres
-      DATABASE__PORT: 5432
-      EXECUTOR__HOST: redis
-      EXECUTOR__PORT: 6379
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -53,3 +47,8 @@ jobs:
         working-directory: ./tests
         run: |
           pytest --disable-warnings
+        env:
+          DATABASE__HOST: postgres
+          DATABASE__PORT: 5432
+          EXECUTOR__HOST: redis
+          EXECUTOR__PORT: 6379
