@@ -18,7 +18,7 @@ services:
       - path: .env
         required: false
     healthcheck:
-      test: celery -A flou.executor.celery.app status || exit 1
+      test: celery -A flou.engine.celery.app status || exit 1
       interval: 1s
       timeout: 10s
       retries: 10

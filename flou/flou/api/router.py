@@ -11,7 +11,7 @@ from sqlalchemy import select, update
 from flou.conf import settings
 from flou.database import get_db, get_session
 from flou.database.models import Error
-from flou.executor import get_executor
+from flou.engine import get_engine
 from flou.api.dependencies import get_redis
 from flou.registry import registry
 
@@ -156,10 +156,10 @@ async def transition(
     """
     Perform a transition
     """
-    executor = get_executor()
+    engine = get_engine()
     db = get_db()
     ltm = db.load_ltm(ltm_id)
-    executor.transition(
+    engine.transition(
         ltm,
         transition.transition,
         params=transition.params,
@@ -291,7 +291,7 @@ async def retry(
         with get_session() as session:
             error = session.get(Error, id)
 
-        executor = get_executor()
+        engine = get_engine()
 
         item = error.item
         item.pop("item_id", None)
@@ -301,9 +301,9 @@ async def retry(
             session.commit()
 
         if error.reason == "execute":
-            executor.execute(error.ltm_id, item_id=error.id, **error.item)
+            engine.execute(error.ltm_id, item_id=error.id, **error.item)
         elif error.reason == "transition":
-            executor.transition(error.ltm_id, item_id=error.id, **error.item)
+            engine.transition(error.ltm_id, item_id=error.id, **error.item)
         else:
             raise ValueError
 

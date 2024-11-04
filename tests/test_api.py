@@ -1,6 +1,6 @@
 import pytest
 from flou.database import get_db
-from flou.conf import Executor
+from flou.conf import Engine
 from fastapi.testclient import TestClient
 from flou.api.main import app
 from flou.conf import Database
@@ -98,9 +98,9 @@ def test_rollback(session):
     ltm = PayloadLTM()
     id = ltm.start()
 
-    from flou.executor import get_executor
-    executor = get_executor()
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    from flou.engine import get_engine
+    engine = get_engine()
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
 
     rollback_data = {
         "index": 2,
@@ -121,9 +121,9 @@ def test_replay(session):
     ltm = PayloadLTM()
     id = ltm.start()
 
-    from flou.executor import get_executor
-    executor = get_executor()
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    from flou.engine import get_engine
+    engine = get_engine()
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
 
     replay_data = {
         "index": 3,

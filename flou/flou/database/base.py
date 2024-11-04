@@ -48,7 +48,7 @@ class BaseDatabase:
         return ltms
 
     def create_ltm(self, ltm, payload=None, params=None, playground=False):
-        from flou.executor import get_executor
+        from flou.engine import get_engine
 
         # get the fqn from an instance
         fqn = ltm.get_class_fqn()
@@ -87,7 +87,7 @@ class BaseDatabase:
         ltm._snapshots = [snapshot]
 
         # immediate cause we need this to finish before a sub state can execute
-        get_executor().consume_queues(ltm)
+        get_engine().consume_queues(ltm)
 
         # publish to redis
         redis.publish(
@@ -389,14 +389,14 @@ class BaseDatabase:
     def replay(self, ltm, snapshot_index):
         snapshot = ltm._snapshots[snapshot_index]
         ltm = self.rollback(ltm, snapshot_index - 1, reason="replay")
-        from flou.executor import get_executor
+        from flou.engine import get_engine
 
-        executor = get_executor()
+        engine = get_engine()
         # special case for restart
         if snapshot_index == 0:
-            executor.start(ltm, **snapshot["item"])
+            engine.start(ltm, **snapshot["item"])
         else:
-            executor.transition(ltm, **snapshot["item"])
+            engine.transition(ltm, **snapshot["item"])
 
     def _atomic_append(self, ltm_id, path, value):
         path_last_element = path + ["-1"]

@@ -2,7 +2,7 @@ import uuid
 import json
 import pytest
 
-from flou.database import get_db, get_session
+from flou.database import get_db
 from flou.database.models import Error
 from .test_ltm import Child
 

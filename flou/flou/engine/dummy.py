@@ -2,13 +2,13 @@ import logging
 import uuid
 
 from flou.database import get_db, get_db
-from .base import BaseExecutor
+from .base import BaseEngine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class DummyExecutor(BaseExecutor):
+class DummyEngine(BaseEngine):
     # TODO: change execution and transition to be in a FIFO queue
 
     def execute(self, ltm, fqn, payload=None, item_id=None):
@@ -17,10 +17,10 @@ class DummyExecutor(BaseExecutor):
             if not item_id:
                 item_id = uuid.uuid4()
 
-            from flou.executor import get_executor
+            from flou.engine import get_engine
 
             db = get_db()
-            executor = get_executor()
+            engine = get_engine()
 
             ltm = ltm.root._get_ltm(fqn)
             ltm.run(payload)
@@ -32,7 +32,7 @@ class DummyExecutor(BaseExecutor):
                 item={"item_id": item_id, "fqn": ltm.fqn, "payload": payload},
             )
 
-            executor.consume_queues(ltm)
+            engine.consume_queues(ltm)
         except Exception as e:
             get_db().log_retry(
                 item_id,
@@ -54,9 +54,9 @@ class DummyExecutor(BaseExecutor):
             if not item_id:
                 item_id = uuid.uuid4()
 
-            from flou.executor import get_executor
+            from flou.engine import get_engine
 
-            executor = get_executor()
+            engine = get_engine()
             db = get_db()
 
             if not namespace:
@@ -77,7 +77,7 @@ class DummyExecutor(BaseExecutor):
                 },
             )
 
-            executor.consume_queues(ltm)
+            engine.consume_queues(ltm)
         except Exception as e:
             get_db().log_retry(
                 item_id,

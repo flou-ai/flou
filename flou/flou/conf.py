@@ -61,8 +61,8 @@ class OldDatabase(BaseModel):
     port: int = None
 
 
-class Executor(BaseModel):
-    engine: str = "flou.executor.celery.CeleryExecutor"
+class Engine(BaseModel):
+    engine: str = "flou.engine.celery.CeleryEngine"
     broker_url: str = "redis://localhost:6379/0"
     max_retries: int = 1
     broker_connection_retry_on_startup: bool = True
@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[HttpUrl | Literal["*"]] = ["*"]
     database: Database = Database()
     old_database: OldDatabase = OldDatabase()
-    executor: Executor = Executor()
+    engine: Engine = Engine()
     redis: Redis = Redis()
 
 

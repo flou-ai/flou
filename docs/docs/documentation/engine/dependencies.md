@@ -56,13 +56,13 @@ VSCode extension
 1. Select the docker container that ends in `...-engine-1`
 1. A new VSCode window will appear using the engine Python environment -->
 
-### Executor settings
+### Engine settings
 
 #### Max retries
 
 - **Type**: Int
 - **Default**: 1
 - **Description**: You can set the maximum amount of retries for a certain
-execution by setting `EXECUTOR__MAX_RETRIES`. Each retry will be done with a
+execution by setting `ENGINE__MAX_RETRIES`. Each retry will be done with a
 jittery exponential backoff. For more information see [Celery's
 documentation](https://docs.celeryq.dev/en/stable/userguide/tasks.html#Task.retry_backoff).

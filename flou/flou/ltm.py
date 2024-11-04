@@ -8,7 +8,7 @@ import parse
 
 from .exceptions import InvalidTransition
 from .database import get_db
-from .executor import get_executor
+from .engine import get_engine
 from .utils import to_set, get_fqn
 
 
@@ -550,7 +550,7 @@ class LTM(LTMManager, LTMState):
             raise ValueError("Only a new ltm can be started")
 
         self._init_ltms()
-        self.id = get_executor().start(self, payload=payload, playground=playground)
+        self.id = get_engine().start(self, payload=payload, playground=playground)
         return self.id
 
     @property

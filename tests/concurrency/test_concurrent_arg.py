@@ -2,7 +2,7 @@
 
 from flou.ltm import LTM
 from flou.database import get_db
-from flou.executor import get_executor
+from flou.engine import get_engine
 
 
 class ConcurrentState(LTM):
@@ -74,8 +74,8 @@ def test_multiple_concurrent_arg(session):
     assert 'second_concurrent_1' not in doneLTM._state
     assert 'second_concurrent_2' not in doneLTM._state
 
-    executor = get_executor()
-    executor.transition(root, "next_{kwarg}", params=[{'kwarg': '1'}])
+    engine = get_engine()
+    engine.transition(root, "next_{kwarg}", params=[{'kwarg': '1'}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
@@ -88,8 +88,8 @@ def test_multiple_concurrent_arg(session):
 
     assert 'second_concurrent_2' not in doneLTM._state
 
-    executor = get_executor()
-    executor.transition(doneLTM, "next_{kwarg}", params=[{'kwarg': '2'}])
+    engine = get_engine()
+    engine.transition(doneLTM, "next_{kwarg}", params=[{'kwarg': '2'}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
     assert doneLTM._state['first_concurrent_1'] == {'_status': 'finished'}
@@ -105,8 +105,8 @@ def test_multiple_concurrent_arg(session):
     db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
-    executor = get_executor()
-    executor.transition(doneLTM, "next_{kwarg}", params=[{'kwarg': '1'}, {'kwarg': '2'}])
+    engine = get_engine()
+    engine.transition(doneLTM, "next_{kwarg}", params=[{'kwarg': '1'}, {'kwarg': '2'}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
