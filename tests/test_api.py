@@ -1,9 +1,7 @@
 import pytest
 from flou.database import get_db
-from flou.conf import Engine
 from fastapi.testclient import TestClient
 from flou.api.main import app
-from flou.conf import Database
 from flou.registry import registry
 
 client = TestClient(app)

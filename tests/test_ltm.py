@@ -6,7 +6,7 @@ from flou.database import get_db
 from flou.engine import get_engine
 from flou.conf import Engine
 from flou.ltm import LTM
-from .utils import patch_settings, convert_lists_to_sets
+from .utils import convert_lists_to_sets, patch_settings
 
 
 class Child(LTM):

@@ -32,7 +32,7 @@ def import_all_models():
         if modname.endswith('.models'):
             importlib.import_module(modname)
 
-import_all_models()
+# import_all_models()
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

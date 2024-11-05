@@ -10,12 +10,15 @@ from sqlalchemy import select, update
 
 from flou.conf import settings
 from flou.database import get_db, get_session
-from flou.database.models import Error
 from flou.engine import get_engine
 from flou.api.dependencies import get_redis
+from flou.engine.models import Error
 from flou.registry import registry
 
 router = APIRouter()
+from flou.engine.router import router as engine_router
+
+router.include_router(engine_router)
 
 
 @router.get("/example")

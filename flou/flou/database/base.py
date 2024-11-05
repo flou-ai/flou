@@ -4,16 +4,16 @@ import importlib
 import sys
 import traceback
 
-import json
 import jsonpatch
 from redis import Redis
-from sqlalchemy import update, func, ARRAY, String, cast, text, literal_column
+from sqlalchemy import update, func, cast, text, literal_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
 
 from . import get_session
-from .models import Error, LTM
 from .utils import json_dumps
 from flou.conf import settings
+from flou.engine.models import Error
+from flou.ltm.models import LTM
 
 
 redis = Redis(host=settings.redis.host, port=settings.redis.port, db=settings.redis.db)
@@ -185,7 +185,7 @@ class BaseDatabase:
         }
         update_query = text(
             f"""
-                            UPDATE ltms SET
+                            UPDATE ltm_ltms SET
                             snapshots = snapshots || :snapshot,
                             {', '.join([f"{key} = CAST('{value}' AS JSONB) " for i, (key, value) in enumerate(sql_updates.items())])}
                             WHERE id=:ltm_id
