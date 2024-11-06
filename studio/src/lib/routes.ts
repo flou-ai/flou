@@ -1,3 +1,6 @@
+import { get } from 'svelte/store';
+import { page } from '$app/stores';
+
 import {
     Flask,
     User,
@@ -16,11 +19,11 @@ export const routes = [
     { name: '', title: true },
     { name: 'Inspect', path: '/inspect', icon: ListMagnifyingGlass },
     { name: 'Playground', path: '/playground', icon: Pinwheel },
+    { name: 'Experiments', path: '/experiments', icon: Flask },
     { name: 'State Machines', path: '/state-machines', icon: TreeStructure, disabled: true },
     { name: 'Performance', path: '/performance', icon: ChartLineUp, disabled: true },
     { name: 'Analyze', path: '/analyze', icon: Function, disabled: true },
     { name: 'Datasets', path: '/datasets', icon: Database, disabled: true },
-    { name: 'Experiments', path: '/experiments', icon: Flask, disabled: true },
     { name: 'Community', title: true },
     { name: 'Patterns Hub', path: '/patterns-hub', icon: BracketsAngle, disabled: true },
     { name: 'Learn', title: true },
@@ -29,3 +32,9 @@ export const routes = [
     { name: 'Bottom', section: true },
     { name: 'My profile', path: '/profile', icon: User, disabled: true, showInNav: false },
 ];
+
+export let getCurrentRoute = () => {
+    const currentPath = get(page).url.pathname;
+    const matchingRoute = routes.find((route: any) => currentPath.startsWith(route.path));
+    return matchingRoute
+}
