@@ -4,19 +4,19 @@
 
 	import { ListMagnifyingGlass, Plus } from 'phosphor-svelte';
 
-	const listUrl = `${PUBLIC_API_BASE_URL}ltm/`;
-	let ltms: any[];
+	const listUrl = `${PUBLIC_API_BASE_URL}experiments/`;
+	let experiments: any[];
 
 	onMount(async () => {
-		await getLTMs();
+		await getExperiments();
 	});
 
 	// Get the snapshots from the API
-	let getLTMs = async () => {
+	let getExperiments = async () => {
 		await fetch(listUrl)
 			.then((response) => response.json())
 			.then((data) => {
-				ltms = data;
+				experiments = data;
 			})
 			.catch((error) => {
 				console.log(error);
@@ -25,11 +25,21 @@
 	};
 </script>
 
+<h2>Experiments</h2>
 <div class="table-header">
-	<h3>LTMs</h3>
+	<h3> </h3>
+	<div class="table-controls">
+		<a href="/experiments/new">
+			<Plus size="1rem" /> New Experiment
+		</a>
+	</div>
 </div>
 
-{#if ltms}
+{#if experiments === undefined}
+	<p>Loading...</p>
+{:else if experiments.length === 0}
+	<a href="/experiments/new">Create your first experiment</a>
+{:else}
 	<table>
 		<tr>
 			<th>ID</th>
@@ -40,16 +50,16 @@
 			<th>Updated At</th>
 			<th></th>
 		</tr>
-		{#each ltms as ltm}
+		{#each experiments as experiment}
 			<tr>
-				<td>{ltm.id}</td>
-				<td>{ltm.name}</td>
-				<td>{ltm.fqn}</td>
-				<td>{ltm.snapshots_count}</td>
-				<td>{ltm.created_at}</td>
-				<td>{ltm.updated_at}</td>
+				<td>{experiment.id}</td>
+				<td>{experiment.name}</td>
+				<td>{experiment.fqn}</td>
+				<td>{experiment.snapshots_count}</td>
+				<td>{experiment.created_at}</td>
+				<td>{experiment.updated_at}</td>
 				<td>
-					<a href="inspect/{ltm.id}">
+					<a href="inspect/{experiment.id}">
 						<ListMagnifyingGlass size="1.25rem" />
 					</a>
 				</td>
@@ -57,8 +67,6 @@
 			</tr>
 		{/each}
 	</table>
-{:else}
-	<p>Loading...</p>
 {/if}
 
 <style lang="scss">

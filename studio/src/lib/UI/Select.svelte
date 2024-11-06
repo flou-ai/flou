@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { CaretRight } from 'phosphor-svelte';
 
+	export let ariaInvalid: any;
+	export let required: any = false;
 	export let value: any;
 	export let options: any;
     export let emptyLabel: string = "Select";
@@ -11,8 +13,8 @@
 <label for="ltm">
 	{label}
 	<div class="select">
-		<select bind:value={value} id="ltm">
-			<option value={null}>{emptyLabel}</option>
+		<select bind:value={value} id="ltm" aria-invalid={ariaInvalid} {required}>
+			<option value="">{emptyLabel}</option>
 			{#each options as [ option_value, option_name ]}
 				<option value={option_value}>{option_name}</option>
 			{/each}

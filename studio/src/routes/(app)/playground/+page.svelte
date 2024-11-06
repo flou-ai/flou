@@ -80,30 +80,4 @@
 	<p>Loading...</p>
 {/if}
 
-<style lang="scss">
-	.table-header {
-		display: flex;
-		justify-content: space-between;
-	}
-
-	.table-controls {
-		display: flex;
-		align-items: center;
-		justify-content: end;
-		padding: 0 1rem;
-
-		a {
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			color: var(--black-40, rgba(28, 28, 28, 0.40));
-			text-decoration: none;
-
-			&:hover {
-				color: var(--black-100, #1c1c1c);
-			}
-		}
-	}
-</style>
-
 <WebSocket ltmID="56"/>

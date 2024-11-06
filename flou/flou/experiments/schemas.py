@@ -1,20 +1,52 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from flou.api.schemas import BaseModel, TimestampedModel
 
 
-class Experiment(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    ltm_id: int
-    rollback_index: int
-    inputs: dict
-    outputs: dict
+class TrialId(BaseModel):
+    id: UUID
 
 
 class TrialBase(BaseModel):
-    experiment_id: UUID
     name: str | None = None
-    rollback_index: id | None
-    inputs: dict
-    outputs: dict
+    inputs: dict = {}
+    outputs: dict = {}
+
+
+class TrialList(TrialId, TrialBase, TimestampedModel):
+    index: int
+
+
+class TrialCreateBase(TrialBase):
+    fqn: str
+    rollback_index: int = 0
+    snapshot_index: int = 0
+
+
+class TrialCreate(TrialCreateBase):
+    experiment_id: UUID
+
+
+class ExperimentBase(BaseModel):
+    name: str
+    description: str | None = None
+    inputs: dict = {}
+    outputs: dict = {}
+
+
+class ExperimentId(BaseModel):
+    id: UUID
+
+
+class ExperimentList(ExperimentId, ExperimentBase, TimestampedModel):
+    index: int
+    # trials_count: int
+
+
+class ExperimentCreate(ExperimentBase):
+    trial: TrialCreateBase
+
+
+class ExperimentDetail(ExperimentId, ExperimentBase, TimestampedModel):
+    index: int
+    trials: list[TrialList] = []

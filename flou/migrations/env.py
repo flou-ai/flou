@@ -4,6 +4,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import create_engine
 from sqlalchemy import pool
+from sqlalchemy.exc import InvalidRequestError
 
 from alembic import context
 
@@ -32,7 +33,10 @@ def import_all_models():
         if modname.endswith('.models'):
             importlib.import_module(modname)
 
-# import_all_models()
+try:
+    import_all_models()
+except InvalidRequestError:
+    pass  # don't break on tests
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
