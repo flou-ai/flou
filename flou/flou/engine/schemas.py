@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import List
 
-from pydantic import BaseModel, Field
+from flou.api.schemas import BaseModel
+from pydantic import Field
 
 
 class LTM(BaseModel):
@@ -11,6 +12,9 @@ class LTM(BaseModel):
     snapshots_count: int
     created_at: datetime
     updated_at: datetime
+
+class LTMId(BaseModel):
+    id: int = Field(..., description="The LTM instance id")
 
 
 class LTMCreation(BaseModel):

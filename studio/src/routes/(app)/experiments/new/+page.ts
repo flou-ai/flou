@@ -26,7 +26,6 @@ export const _newExperimentSchema = z.object({
     })
     .refine((data) => {
         const validFQNs = registryOptions.map((option: any) => option[0]);
-        console.log('here', data, validFQNs, registryOptions);
         return validFQNs.includes(data.fqn);
     }, {
         message: 'Invalid LTM',
@@ -36,7 +35,7 @@ export const _newExperimentSchema = z.object({
 
 export const load: PageLoad = async ({ params, fetch }) => {
 
-    registryOptions = await getRegistry();
+    registryOptions = await getRegistry(fetch);
 
     const form = await superValidate(newExperimentInitial, zod(_newExperimentSchema));
 

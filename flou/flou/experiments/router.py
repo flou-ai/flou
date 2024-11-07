@@ -6,6 +6,7 @@ import uuid
 
 from flou.database import get_session, get_db
 from .models import Experiment, Trial
+from flou.engine.schemas import LTMId
 from .schemas import (
     ExperimentList,
     ExperimentCreate,
@@ -24,10 +25,27 @@ async def list_experiments(session = Depends(get_session)):
     """
     Lists all Experiments.
     """
-    experiments = session.scalars(select(Experiment)).all()
+    stmt = (
+        select(
+            Experiment,
+            func.count(Trial.id).label('trials_count')
+        )
+        .outerjoin(Trial)  # Use outer join to include Experiments without Trials
+        .group_by(Experiment.id)
+    )
+    # Execute the query
+    results = session.execute(stmt).all()
+
+    # Map the results to Pydantic models
+    # from ipdb import set_trace; set_trace()
+    experiments = []
+    for experiment, trials_count in results:
+        experiment.trials_count = trials_count
+        experiments.append(ExperimentList.model_validate(experiment))
+
     return experiments
 
-@router.post("/", response_model=TrialId)
+@router.post("/", response_model=LTMId)
 async def create_experiment(experiment: ExperimentCreate, session = Depends(get_session)):
     experiment_kwargs = experiment.model_dump()
     trial_kwargs = experiment_kwargs.pop("trial")
@@ -49,7 +67,7 @@ async def create_experiment(experiment: ExperimentCreate, session = Depends(get_
     session.commit()
     session.refresh(new_experiment)
 
-    return {"id": new_experiment.trials[0].id}
+    return {"id": new_experiment.trials[0].ltm_id}
 
 @router.get("/{experiment_id}", response_model=ExperimentDetail)
 async def get_experiment(experiment_id: uuid.UUID, session = Depends(get_session)):
@@ -61,7 +79,6 @@ async def get_experiment(experiment_id: uuid.UUID, session = Depends(get_session
         select(Trial).where(Trial.experiment_id == experiment_id)
     ).all()
     experiment.trials = trials
-    experiment.trials_count = len(trials)
     return experiment
 
 @router.put("/{experiment_id}", response_model=ExperimentDetail)

@@ -3,6 +3,7 @@
 	import { PUBLIC_API_BASE_URL } from '$env/static/public';
 
 	import { ListMagnifyingGlass, Plus } from 'phosphor-svelte';
+	import { formatDate } from '$lib/utils';
 
 	const listUrl = `${PUBLIC_API_BASE_URL}experiments/`;
 	let experiments: any[];
@@ -42,22 +43,20 @@
 {:else}
 	<table>
 		<tr>
-			<th>ID</th>
+			<th>#</th>
 			<th>Name</th>
-			<th>FQN</th>
-			<th># Snapshots</th>
+			<th># Trials</th>
 			<th>Created At</th>
 			<th>Updated At</th>
 			<th></th>
 		</tr>
 		{#each experiments as experiment}
 			<tr>
-				<td>{experiment.id}</td>
+				<td>{experiment.index}</td>
 				<td>{experiment.name}</td>
-				<td>{experiment.fqn}</td>
-				<td>{experiment.snapshots_count}</td>
-				<td>{experiment.created_at}</td>
-				<td>{experiment.updated_at}</td>
+				<td>{experiment.trials_count}</td>
+				<td>{formatDate(experiment.created_at)}</td>
+				<td>{formatDate(experiment.updated_at)}</td>
 				<td>
 					<a href="inspect/{experiment.id}">
 						<ListMagnifyingGlass size="1.25rem" />

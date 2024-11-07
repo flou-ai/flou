@@ -40,7 +40,7 @@ class ExperimentId(BaseModel):
 
 class ExperimentList(ExperimentId, ExperimentBase, TimestampedModel):
     index: int
-    # trials_count: int
+    trials_count: int
 
 
 class ExperimentCreate(ExperimentBase):

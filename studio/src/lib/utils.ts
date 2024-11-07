@@ -1,7 +1,7 @@
-const formatDate = (dateString: string) => {
+export const formatDate = (dateString: string) => {
     const options = {
         year: 'numeric',
-        month: 'long',
+        month: 'numeric',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'

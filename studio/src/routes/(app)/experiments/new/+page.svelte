@@ -33,7 +33,7 @@
 		})
 			.then((response) => response.json())
 			.then((data) => {
-				// goto(`/experiments/${data.id}`);
+				goto(`/playground/${data.id}`);
 			})
 			.catch((error) => {
 				console.error('Error:', error);
@@ -45,6 +45,7 @@
 <Block>
 	{#if $message}<div>{$message}</div>{/if}
 	<form use:enhance>
+		Create an experiment to track different runs and analyze the performance.
 		<p>Choose from the following:</p>
 		<label>
 			Name
@@ -55,22 +56,6 @@
 			/>
 		</label>
 		{#if $errors.name}<span class="invalid">{$errors.name}</span>{/if}
-		<label>
-			Description
-			<textarea
-				aria-invalid={$errors.description ? 'true' : undefined}
-				bind:value={$form.description}
-				{...$constraints.description}
-			/>
-		</label>
-		<label>
-			First Trial Name
-			<input
-				aria-invalid={$errors.trial?.name ? 'true' : undefined}
-				bind:value={$form.trial.name}
-				{...$constraints.trial?.name}
-			/>
-		</label>
 		<Select
 			ariaInvalid={$errors.trial?.fqn ? 'true' : undefined}
 			bind:value={$form.trial.fqn}
@@ -79,6 +64,25 @@
 			label="LTM"
 			emptyLabel="Select LTM"
 		/>
+		{#if $errors.trial?.fqn}<span class="invalid">{$errors.trial.fqn}</span>{/if}
+		<label>
+			Description: describe what you are currently experimenting on.
+			<textarea
+				aria-invalid={$errors.description ? 'true' : undefined}
+				bind:value={$form.description}
+				{...$constraints.description}
+			/>
+		</label>
+		{#if $errors.description}<span class="invalid">{$errors.description}</span>{/if}
+		<label>
+			First Trial Name
+			<input
+				aria-invalid={$errors.trial?.name ? 'true' : undefined}
+				bind:value={$form.trial.name}
+				{...$constraints.trial?.name}
+			/>
+		</label>
+		{#if $errors.trial?.name}<span class="invalid">{$errors.trial.name}</span>{/if}
 		<div class="buttons full-width">
 			<a class="button secondary large" href="/experiments">Cancel</a>
 			<button type="submit" class="primary large">Create Experiment</button>
