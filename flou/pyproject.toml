@@ -28,6 +28,7 @@ dependencies = [
     "watchdog",
     "sqlalchemy[asyncio]",
     "alembic",
+    "alembic_utils",
     "psycopg",
 ]
 
