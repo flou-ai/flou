@@ -84,6 +84,7 @@ def test_set_error(session):
     error_record = session.query(Error).filter_by(id=item_id).one_or_none()
     assert error_record.retrying == True
 
+    session.expunge_all()
     # set the error
     db.set_stop_retrying(item_id)
 

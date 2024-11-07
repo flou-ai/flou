@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from flou.conf import settings
-from flou.flou.api.router import router
+from flou.api.router import router
 
 # import the app folder
 sys.path.append(os.getcwd())

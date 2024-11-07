@@ -3,9 +3,10 @@ from flou.database import get_db
 from fastapi.testclient import TestClient
 from flou.api.main import app
 from flou.registry import registry
+from .test_ltm import PayloadLTM
+from flou.experiments.models import Experiment, Trial
 
 client = TestClient(app)
-
 
 def test_list(session):
     from .test_ltm import PayloadLTM
@@ -135,3 +136,38 @@ def test_replay(session):
     loaded_ltm = db.load_ltm(id, snapshots=True, rollbacks=True)
     assert len(loaded_ltm._snapshots) == 5
     assert len(loaded_ltm._rollbacks) == 1
+
+
+def test_list_experiments(session):
+    experiment1 = Experiment(name="Experiment 1", description="First experiment")
+    experiment2 = Experiment(name="Experiment 2", description="Second experiment")
+    session.add(experiment1)
+    session.add(experiment2)
+    session.commit()
+
+    response = client.get("/api/v0/experiments")
+    assert response.status_code == 200
+    experiments = response.json()
+    assert isinstance(experiments, list)
+    assert len(experiments) >= 2
+    assert any(exp['name'] == "Experiment 1" for exp in experiments)
+    assert any(exp['name'] == "Experiment 2" for exp in experiments)
+
+def test_create_experiment(session):
+    experiment_creation_data = {
+        "name": "New Experiment",
+        "description": "A test experiment",
+        "trial": {
+            "name": "Initial Trial",
+            "fqn": "tests.test_ltm.Root",
+        }
+    }
+
+    from tests.test_ltm import Root
+    registry._registry = []
+    registry.register(Root)
+
+    response = client.post("/api/v0/experiments", json=experiment_creation_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['id']

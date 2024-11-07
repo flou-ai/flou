@@ -27,7 +27,7 @@ class BaseDatabase:
     def get_session(self):
         if self.session:
             return self.session
-        return get_session()
+        return next(get_session())
 
     def list_ltms(self, playground=False):
 

@@ -26,14 +26,6 @@ from flou.registry import registry
 router = APIRouter()
 
 
-@router.get("/example")
-def read_example():
-    return {
-        "message": "Hello, World!",
-        "engine": settings.old_database.engine,
-    }
-
-
 @router.get("/ltm", response_model=List[LTM])
 async def list_ltms(
     playground: bool = Query(
@@ -81,6 +73,7 @@ async def create_ltm(ltm_creation: LTMCreation):
 async def get_ltm(
     ltm_id: int = Path(..., description="The LTM instance id"),
     rollbacks: bool = Query(False, description="Include rollbacks"),
+    session = Depends(get_session),
 ):
     """
     Get an LTM instance's data
@@ -102,10 +95,9 @@ async def get_ltm(
         data["rollbacks"] = ltm._rollbacks
 
     # gather the errors
-    with get_session() as session:
-        data["errors"] = session.scalars(
-            select(Error).where(Error.ltm_id == ltm_id)
-        ).all()
+    data["errors"] = session.scalars(
+        select(Error).where(Error.ltm_id == ltm_id)
+    ).all()
     return data
 
 
@@ -231,7 +223,8 @@ async def replay(
 
 @router.post("/ltm/{ltm_id}/recover-rollback")
 async def rollback(
-    rollback: RollbackIndex, ltm_id: int = Path(..., description="The LTM instance id")
+    rollback: RollbackIndex,
+    ltm_id: int = Path(..., description="The LTM instance id"),
 ):
     """
     Undo a rollback
@@ -244,23 +237,23 @@ async def rollback(
 
 @router.post("/ltm/{ltm_id}/retry")
 async def retry(
-     error_list: ErrorList, ltm_id: int = Path(..., description="The LTM instance id")
+     error_list: ErrorList,
+     ltm_id: int = Path(..., description="The LTM instance id"),
+     session = Depends(get_session),
 ):
     """
     Retries a failed execution/transition
     """
     for id in error_list.ids:
-        with get_session() as session:
-            error = session.get(Error, id)
+        error = session.get(Error, id)
 
         engine = get_engine()
 
         item = error.item
         item.pop("item_id", None)
 
-        with get_session() as session:
-            session.execute(update(Error).where(Error.id == id).values(retrying=True))
-            session.commit()
+        session.execute(update(Error).where(Error.id == id).values(retrying=True))
+        session.commit()
 
         if error.reason == "execute":
             engine.execute(error.ltm_id, item_id=error.id, **error.item)
