@@ -1,172 +1,94 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import Block from '$lib/UI/Block.svelte';
-	import LTMGraph from '$lib/UI/Graph/LTMGraph.svelte';
-	import SnapshotsTable from '$lib/Components/SnapshotsTable.svelte';
-	import State from '$lib/Components/State.svelte';
-	import SnapshotNav from '$lib/Components/SnapshotNav.svelte';
-	import WebSocket from '$lib/WebSocket.svelte';
-	import { PUBLIC_API_BASE_URL } from '$env/static/public';
-	import { TreeStructure, Pinwheel } from 'phosphor-svelte';
+	import { formatDate } from '$lib/utils';
+	import InlineEditTextArea from '$lib/UI/InlineEditTextArea.svelte';
 
 	import type { PageData } from './$types';
 	export let data: PageData;
 
-	const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.id}`;
-	let ltm: any;
-
-	onMount(async () => {
-		await getLtm();
-	});
-
-	// Get the snapshots from the API
-	let getLtm = async () => {
-		await fetch(ltmUrl)
-			.then((response) => response.json())
-			.then((data) => {
-				ltm = data;
-				snapshotIndex = ltm.snapshots.length - 1;
-				console.log(ltm);
-			})
-			.catch((error) => {
-				console.log(error);
-				return [];
-			});
-	};
-
-	// Get the snapshots from the API
-	let copyLtm = async () => {
-		await fetch(`${ltmUrl}/copy`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				goto(`/playground/${data.copy_id}`);
-			})
-			.catch((error) => {
-				console.log(error);
-				return [];
-			});
-	};
-
-	///// Snapshots management //////
-
-	let snapshot: any = {};
-	let snapshotIndex = 0;
-
-	let updateLtm = (event: CustomEvent) => {
-		const data: any = event.detail;
-		if ('snapshot' in data) {
-			const snapshot = data.snapshot;
-			ltm = { ...ltm, snapshots: [...ltm.snapshots, snapshot] };
-			if (snapshotIndex === ltm.snapshots.length - 2) {
-				snapshotIndex = ltm.snapshots.length - 1;
-			}
-		}
-		if ('error' in data) {
-			const error = data.error;
-			const i = ltm.errors.findIndex((e: any) => e.id === error.id);
-			let errors;
-			if (i > -1) {
-				errors = ltm.errors.toSpliced(i, 1, error);
-			} else {
-				errors = [...ltm.errors, error];
-			}
-			ltm = { ...ltm, errors: errors };
-		}
-	};
-
-	let currentSnapshot: any = {};
-	$: {
-		if (ltm?.snapshots) {
-			currentSnapshot = ltm.snapshots[snapshotIndex];
-		} else {
-			currentSnapshot = {};
-		}
+	function handleDescriptionSave(newDescription: string) {
+		data.experiment.description = newDescription;
+		// Add any additional logic to persist the change if necessary
 	}
 </script>
 
-<WebSocket ltmID={data.id} on:update={updateLtm} />
-<div class="container">
-	{#if ltm}
-		<div id="title">
-			<div class="info">
-				<Block>
-					<h2 slot="title"><TreeStructure size="1.25rem" /> {ltm.name}</h2>
-					<div slot="controls">
-						<button class="primary" on:click={copyLtm}>
-							<Pinwheel size="1rem" /> Copy & Open LTM in Playground
-						</button>
-					</div>
-					<dl class="details">
-						<dt>ID</dt>
-						<dd>{data.id}</dd>
-						<dt>Fqn</dt>
-						<dd>{ltm.fqn}</dd>
-						<dt>Kwargs</dt>
-						<dd>{JSON.stringify(ltm.kwargs)}</dd>
-					</dl>
-					<hr />
-					<dl class="details">
-						<dt>Created At</dt>
-						<dd>{ltm.created_at}</dd>
-						<dt>Updated At</dt>
-						<dd>{ltm.updated_at}</dd>
-					</dl>
-				</Block>
-			</div>
-		</div>
-		<div id="snapshots">
-			<Block>
-				<SnapshotsTable {ltm} bind:snapshot bind:snapshotIndex />
-			</Block>
-		</div>
-		<div id="snapshot">
-			<Block>
-				<State fullSnapshot={snapshot} {currentSnapshot} />
-			</Block>
-		</div>
-		<div id="graph">
-			<Block>
-				<div class="flex-column">
-					<h3><TreeStructure size="1.25rem" />Visual representation</h3>
-					<SnapshotNav {ltm} bind:snapshotIndex />
-					<LTMGraph ltm={ltm.structure} state={snapshot} {currentSnapshot} concurrent={ltm.concurrent_instances} />
-				</div>
-			</Block>
-		</div>
-	{:else}
-		<p>Loading...</p>
-	{/if}
-</div>
+{#if data.experiment === undefined}
+	<p>Loading...</p>
+{:else}
+	<div class="container">
+		<Block>
+			<small>name:</small>
+			<h2>{data.experiment.name}</h2>
+			<small>Description:</small>
+			<!-- Replace static paragraph with InlineEditTextArea -->
+			<InlineEditTextArea
+				value={data.experiment.description}
+				on:save={event => handleDescriptionSave(event.detail)}
+			/>
+			<small># Trials:</small>
+			<p>{data.experiment.trials.length}</p>
+			<dl class="details">
+				<dt>Created At</dt>
+				<dd>{data.experiment.created_at}</dd>
+				<dt>Updated At</dt>
+				<dd>{data.experiment.updated_at}</dd>
+			</dl>
+			<dl class="details">
+				<dt>Description</dt>
+				<dd>do you have a hypothesis? what are you developing or testing?</dd>
+				<dt>What are your goals with this experiment?</dt>
+				<dd>Goals, Success criteria, Metric optimization</dd>
+				<dt>Results & Conclusions</dt>
+				<dd>What are your current conclusions?</dd>
+			</dl>
+			<dl class="details">
+				<dt>Experiment config</dt>
+				<dt>Trials config: schemas & evaluators</dt>
+				<dd>What data/metrics do you need in each trial to feed the evaluators?</dd>
+
+				<dt>Segments config: schemas & evaluators</dt>
+				<dd>Aggregates per segment run: add dataset or upgrade dataset</dd>
+				<dt>Do you want to run your code to a dataset? Define how to apply your dataset to an LTM</dt>
+
+
+			</dl>
+		</Block>
+		<Block>
+			<h3>Trials</h3>
+			<table>
+				<tr>
+					<th>#</th>
+					<th>Name</th>
+					<th>Created At</th>
+					<th>Updated At</th>
+					<th></th>
+				</tr>
+				{#each data.experiment.trials as trial}
+					<tr>
+						<td>{trial.index}</td>
+						<td>{trial.name}</td>
+						<td>{formatDate(trial.created_at)}</td>
+						<td>{formatDate(trial.updated_at)}</td>
+						<td>
+							<!-- <a href="experiments/{experiment.id}">
+						<ListMagnifyingGlass size="1.25rem" />
+					</a> -->
+						</td>
+					</tr>
+				{/each}
+			</table>
+		</Block>
+	</div>
+{/if}
 
 <style lang="scss">
 	.container {
 		display: grid;
 		gap: var(--20, 1.25rem);
-		// grid-template-areas: 'graph graph' 'snapshot title';
-		grid-template-areas: 'title title' 'graph graph' 'snapshots snapshot';
-		grid-template-columns: auto auto;
 	}
 	.container > div {
 		display: flex;
 		flex-direction: column;
-	}
-	#title {
-		grid-area: title;
-	}
-	#snapshots {
-		grid-area: snapshots;
-	}
-	#snapshot {
-		grid-area: snapshot;
-	}
-	#graph {
-		grid-area: graph;
 	}
 	.details {
 		display: grid;
@@ -179,7 +101,7 @@
 	dt {
 		grid-row-start: 1; /* reset, next column */
 
-		/* 14 Regular */
+		/* 14 regular */
 		font-size: 0.875rem;
 		font-style: normal;
 		font-weight: 400;
@@ -189,7 +111,7 @@
 	dd {
 		margin: 0;
 
-		/* 18 Semibold */
+		/* 18 semibold */
 		font-size: 1.125rem;
 		font-style: normal;
 		font-weight: 600;
@@ -201,17 +123,17 @@
 		border-right: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
 		position: absolute;
 		height: 100%;
-		transform: translateX(calc(-1 * var(--horizontal-gap) / 2));
+		transform: translatex(calc(-1 * var(--horizontal-gap) / 2));
 	}
-	.flex-column {
-		flex-grow: 1;
-		align-self: stretch;
-		display: flex;
-		flex-direction: column;
-	}
-	.info {
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-	}
+	// .flex-column {
+	// 	flex-grow: 1;
+	// 	align-self: stretch;
+	// 	display: flex;
+	// 	flex-direction: column;
+	// }
+	// .info {
+	// 	width: 100%;
+	// 	display: flex;
+	// 	flex-direction: column;
+	// }
 </style>

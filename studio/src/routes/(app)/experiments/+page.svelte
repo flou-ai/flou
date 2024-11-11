@@ -58,7 +58,7 @@
 				<td>{formatDate(experiment.created_at)}</td>
 				<td>{formatDate(experiment.updated_at)}</td>
 				<td>
-					<a href="inspect/{experiment.id}">
+					<a href="experiments/{experiment.id}">
 						<ListMagnifyingGlass size="1.25rem" />
 					</a>
 				</td>
