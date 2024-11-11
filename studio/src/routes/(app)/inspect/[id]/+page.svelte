@@ -4,36 +4,26 @@
 	import Block from '$lib/UI/Block.svelte';
 	import LTMGraph from '$lib/UI/Graph/LTMGraph.svelte';
 	import SnapshotsTable from '$lib/Components/SnapshotsTable.svelte';
+	import Alert from '$lib/UI/Alert.svelte';
 	import State from '$lib/Components/State.svelte';
 	import SnapshotNav from '$lib/Components/SnapshotNav.svelte';
 	import WebSocket from '$lib/WebSocket.svelte';
-	import { PUBLIC_API_BASE_URL } from '$env/static/public';
 	import { TreeStructure, Pinwheel } from 'phosphor-svelte';
+	import { PUBLIC_API_BASE_URL } from '$env/static/public';
 
 	import type { PageData } from './$types';
 	export let data: PageData;
+	const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.params.id}?rollbacks=True`;
 
-	const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.id}`;
 	let ltm: any;
 
 	onMount(async () => {
-		await getLtm();
+		ltm = data.ltm;
+		snapshotIndex = ltm.snapshots.length - 1;
 	});
 
 	// Get the snapshots from the API
-	let getLtm = async () => {
-		await fetch(ltmUrl)
-			.then((response) => response.json())
-			.then((data) => {
-				ltm = data;
-				snapshotIndex = ltm.snapshots.length - 1;
-				console.log(ltm);
-			})
-			.catch((error) => {
-				console.log(error);
-				return [];
-			});
-	};
+	let getLtm = async () => {};
 
 	// Get the snapshots from the API
 	let copyLtm = async () => {
@@ -90,7 +80,12 @@
 	}
 </script>
 
-<WebSocket ltmID={data.id} on:update={updateLtm} />
+<WebSocket ltmID={data.params.id} on:update={updateLtm} />
+{#if data.rollback }
+<Alert level="info">
+	You are currently viewing a rollback of the LTM. To view the latest version, click <a href="/playground/{data.params.id}">here</a>.
+</Alert>
+{/if}
 <div class="container">
 	{#if ltm}
 		<div id="title">
@@ -104,7 +99,7 @@
 					</div>
 					<dl class="details">
 						<dt>ID</dt>
-						<dd>{data.id}</dd>
+						<dd>{data.params.id}</dd>
 						<dt>Fqn</dt>
 						<dd>{ltm.fqn}</dd>
 						<dt>Kwargs</dt>
@@ -135,7 +130,12 @@
 				<div class="flex-column">
 					<h3><TreeStructure size="1.25rem" />Visual representation</h3>
 					<SnapshotNav {ltm} bind:snapshotIndex />
-					<LTMGraph ltm={ltm.structure} state={snapshot} {currentSnapshot} concurrent={ltm.concurrent_instances} />
+					<LTMGraph
+						ltm={ltm.structure}
+						state={snapshot}
+						{currentSnapshot}
+						concurrent={ltm.concurrent_instances}
+					/>
 				</div>
 			</Block>
 		</div>
