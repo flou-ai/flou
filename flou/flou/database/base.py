@@ -187,7 +187,7 @@ class BaseDatabase:
             f"""
                             UPDATE ltm_ltms SET
                             snapshots = snapshots || :snapshot,
-                            {', '.join([f"{key} = CAST('{value}' AS JSONB) " for i, (key, value) in enumerate(sql_updates.items())])}
+                            {', '.join([f"{key} = CAST(:value{i} AS JSONB) " for i, key in enumerate(sql_updates.keys())])}
                             WHERE id=:ltm_id
                             """
         )
@@ -196,6 +196,7 @@ class BaseDatabase:
             "snapshot": json_dumps(snapshot),
             "ltm_id": ltm_id,
         }
+        values.update({f"value{i}": value for i, value in enumerate(sql_updates.values())})
 
         with self.get_session() as session:
             session.execute(
