@@ -225,7 +225,11 @@ fieldset {
   gap: 1rem;
 }
 
-label:not(fieldset.radio > label) {
+.label, label:not(fieldset.radio > label) {
+  font-size: 0.75rem;
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+}
+form label:not(fieldset.radio > label) {
   display: flex;
   padding: var(--16, 1rem) var(--20, 1.25rem);
   flex-direction: column;
@@ -235,13 +239,10 @@ label:not(fieldset.radio > label) {
   border-radius: var(--16, 1rem);
   border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
   background: var(--white-80, rgba(255, 255, 255, 0.8));
-  color: var(--black-40, rgba(28, 28, 28, 0.4));
-  /* 12 Regular */
-  font-size: 0.75rem;
 }
 
-label:not(fieldset.radio > label) input,
-label:not(fieldset.radio > label) textarea {
+form label:not(fieldset.radio > label) input,
+form label:not(fieldset.radio > label) textarea {
   display: flex;
   min-height: 1.75rem;
   align-items: flex-start;
@@ -250,12 +251,12 @@ label:not(fieldset.radio > label) textarea {
   width: 100%;
 }
 
-label:not(fieldset.radio > label) input:focus,
-label:not(fieldset.radio > label) textarea:focus {
+form label:not(fieldset.radio > label) input:focus,
+form label:not(fieldset.radio > label) textarea:focus {
   outline: none;
 }
 
-label:focus-within:not(fieldset.radio > label) {
+form label:focus-within:not(fieldset.radio > label) {
   border: 1px solid var(--black-20, rgba(28, 28, 28, 0.2));
 
   /* Focus */
@@ -282,7 +283,7 @@ fieldset.radio label {
   align-items: center;
 }
 
-label select {
+form label select {
   appearance: none;
   width: 100%;
   padding: 0;
@@ -293,8 +294,8 @@ label select {
   position: relative;
 }
 
-label select::before,
-label select::after {
+form label select::before,
+form label select::after {
   --size: 0.3rem;
   position: absolute;
   content: "";
@@ -302,14 +303,14 @@ label select::after {
   pointer-events: none;
 }
 
-label select::before {
+form label select::before {
   border-left: var(--size) solid transparent;
   border-right: var(--size) solid transparent;
   border-bottom: var(--size) solid black;
   top: 40%;
 }
 
-label select::after {
+form label select::after {
   border-left: var(--size) solid transparent;
   border-right: var(--size) solid transparent;
   border-top: var(--size) solid black;

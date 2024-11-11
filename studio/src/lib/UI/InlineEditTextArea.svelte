@@ -40,7 +40,7 @@
 	};
 </script>
 
-<div class="container">
+<span class="container">
 	<span
 		class="plain-text {isEditing ? 'hidden' : 'visible'}"
 		role="button"
@@ -63,13 +63,13 @@
 		</div>
 	</span>
 	<div class="edit-text {isEditing ? 'visible' : 'hidden'}">
-		<textarea
-			bind:value={currentText}
-			on:keydown={handleKeyDown}
-			use:autosize
-			bind:this={textarea}
-			rows="1"
-		></textarea>
+			<textarea
+				bind:value={currentText}
+				on:keydown={handleKeyDown}
+				use:autosize
+				bind:this={textarea}
+				rows="1"
+			></textarea>
 		<div class="actions edit">
 			<button
 				class="save-icon"
@@ -87,11 +87,16 @@
 			</button>
 		</div>
 	</div>
-</div>
+</span>
 
 <style lang="scss">
 	:root {
 		--displacement: 4px;
+	}
+
+	span {
+		font-size: inherit;
+		font-weight: inherit;
 	}
 
 	.container {
@@ -131,7 +136,7 @@
 	}
 
 	.plain {
-		opacity: 0.5;
+		opacity: 0;
 		transform: translateX(calc(100% + 0.25rem));
 	}
 	.edit {
@@ -154,6 +159,7 @@
 		margin: 0;
 		width: 100%;
 		padding-right: 1rem;
+		border-radius: 0.5rem;
 	}
 
 	.save-icon {

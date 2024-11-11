@@ -17,25 +17,42 @@
 {:else}
 	<div class="container">
 		<Block>
-			<small>name:</small>
-			<h2>{data.experiment.name}</h2>
-			<small>Description:</small>
-			<!-- Replace static paragraph with InlineEditTextArea -->
-			<InlineEditTextArea
-				value={data.experiment.description}
-				on:save={event => handleDescriptionSave(event.detail)}
-			/>
-			<small># Trials:</small>
-			<p>{data.experiment.trials.length}</p>
+			<h2>
+				#{data.experiment.index}
+				<InlineEditTextArea
+					value={data.experiment.name}
+					on:save={(event) => handleDescriptionSave(event.detail)}
+				/>
+			</h2>
 			<dl class="details">
-				<dt>Created At</dt>
-				<dd>{data.experiment.created_at}</dd>
-				<dt>Updated At</dt>
-				<dd>{data.experiment.updated_at}</dd>
+				<div>
+					<dt># Trials</dt>
+					<dd>{data.experiment.trials.length}</dd>
+				</div>
+
+				<div>
+					<dt>Created At</dt>
+					<dd>{formatDate(data.experiment.created_at)}</dd>
+				</div>
+				<div>
+					<dt>Updated At</dt>
+					<dd>{formatDate(data.experiment.updated_at)}</dd>
+				</div>
 			</dl>
 			<dl class="details">
+				<div>
+					<dt class="label">Description</dt>
+					<dd>
+						<InlineEditTextArea
+							value={data.experiment.description}
+							on:save={(event) => handleDescriptionSave(event.detail)}
+						/>
+					</dd>
+				</div>
+			</dl>
+			<!-- <dl class="details">
 				<dt>Description</dt>
-				<dd>do you have a hypothesis? what are you developing or testing?</dd>
+
 				<dt>What are your goals with this experiment?</dt>
 				<dd>Goals, Success criteria, Metric optimization</dd>
 				<dt>Results & Conclusions</dt>
@@ -48,10 +65,10 @@
 
 				<dt>Segments config: schemas & evaluators</dt>
 				<dd>Aggregates per segment run: add dataset or upgrade dataset</dd>
-				<dt>Do you want to run your code to a dataset? Define how to apply your dataset to an LTM</dt>
-
-
-			</dl>
+				<dt>
+					Do you want to run your code to a dataset? Define how to apply your dataset to an LTM
+				</dt>
+			</dl> -->
 		</Block>
 		<Block>
 			<h3>Trials</h3>
@@ -82,6 +99,10 @@
 {/if}
 
 <style lang="scss">
+	:root {
+		--horizontal-gap: 3rem;
+	}
+
 	.container {
 		display: grid;
 		gap: var(--20, 1.25rem);
@@ -89,36 +110,30 @@
 	.container > div {
 		display: flex;
 		flex-direction: column;
+		position: relative;
 	}
 	.details {
-		display: grid;
-		grid-auto-flow: column;
-		grid-template-rows: repeat(50, min-content); /* doesn't assume 3 defs but M<50 */
+		display: flex;
+		gap: var(--horizontal-gap);
+		flex-wrap: wrap;
+	}
+
+	.details > div {
 		position: relative;
-		--horizontal-gap: var(--28, 1.75rem);
-		gap: 0 var(--horizontal-gap);
 	}
 	dt {
-		grid-row-start: 1; /* reset, next column */
-
 		/* 14 regular */
-		font-size: 0.875rem;
-		font-style: normal;
-		font-weight: 400;
+		font-size: 0.75rem;
 		line-height: 1.25rem; /* 142.857% */
 		margin-bottom: var(--4, 0.25rem);
+		color: var(--black-40, rgba(28, 28, 28, 0.4));
 	}
 	dd {
 		margin: 0;
-
-		/* 18 semibold */
-		font-size: 1.125rem;
-		font-style: normal;
-		font-weight: 600;
 		line-height: 1.5rem; /* 133.333% */
 	}
 
-	dt:not(:first-child)::before {
+	dl > div:not(:first-child) > dt::before {
 		content: '';
 		border-right: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
 		position: absolute;

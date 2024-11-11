@@ -66,7 +66,11 @@
 		/>
 		{#if $errors.trial?.fqn}<span class="invalid">{$errors.trial.fqn}</span>{/if}
 		<label>
-			Description: describe what you are currently experimenting on.
+			Description
+			<br />
+			Describe what you are currently experimenting on.
+			<br />
+			Do you have a hypothesis? What are you developing or testing?
 			<textarea
 				aria-invalid={$errors.description ? 'true' : undefined}
 				bind:value={$form.description}
