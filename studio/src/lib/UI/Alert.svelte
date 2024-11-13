@@ -30,10 +30,10 @@
 	}
     .alert, .icon {
 		display: flex;
-        align-items: center;
     }
 	.alert {
 		gap: 1rem;
+		align-items: center;
 		padding: 1rem;
 		border-radius: 0.5rem;
 		margin-bottom: 1rem;
@@ -45,5 +45,16 @@
 			font-weight: inherit;
 			color: #1c1c1c;
 		}
+		:global(p) {
+			&:not(:first-child) {
+				margin-bottom: 0;
+			}
+			&:not(:last-child) {
+				margin-top: 0;
+			}
+		}
+	}
+    .icon {
+        align-self: start;
 	}
 </style>

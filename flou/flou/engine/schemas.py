@@ -40,9 +40,9 @@ class Transition(BaseModel):
     )
 
 
-class SnapshotIndex(BaseModel):
+class Rollback(BaseModel):
     index: int = Field(..., description="The index of the desired snapshot")
-
+    replay: bool = Field(False, description="If true, replay the snapshot")
 
 class RollbackIndex(BaseModel):
     index: int = Field(..., description="The index of the desired rollback")

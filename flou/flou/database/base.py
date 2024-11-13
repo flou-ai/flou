@@ -327,7 +327,7 @@ class BaseDatabase:
             )
             session.commit()
 
-    def rollback(self, ltm, snapshot_index=None, rollback_index=None, reason="manual"):
+    def rollback(self, ltm, snapshot_index=None, rollback_index=None, replay=False, reason="manual"):
         """
         Rollback the LTM to a previous snapshot.
 
@@ -350,6 +350,10 @@ class BaseDatabase:
         }
 
         if snapshot_index is not None:
+            if replay:
+                snapshot = ltm._snapshots[snapshot_index]
+                snapshot_index -= 1
+
             new_snapshots = ltm._snapshots[: snapshot_index + 1]
             # calculate snapshot until that point
             if snapshot_index == -1:  # if restart
@@ -385,19 +389,17 @@ class BaseDatabase:
 
         # set _initial_state to be used in snapshot calculation
         ltm._initial_state = {}
-        return ltm
 
-    def replay(self, ltm, snapshot_index):
-        snapshot = ltm._snapshots[snapshot_index]
-        ltm = self.rollback(ltm, snapshot_index - 1, reason="replay")
         from flou.engine import get_engine
-
         engine = get_engine()
-        # special case for restart
-        if snapshot_index == 0:
-            engine.start(ltm, **snapshot["item"])
-        else:
-            engine.transition(ltm, **snapshot["item"])
+
+        if replay:
+            if snapshot_index == -1:
+                engine.start(ltm, **snapshot["item"])
+            else:
+                engine.transition(ltm, **snapshot["item"])
+
+        return ltm
 
     def _atomic_append(self, ltm_id, path, value):
         path_last_element = path + ["-1"]

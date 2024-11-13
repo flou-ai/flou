@@ -366,7 +366,7 @@ def test_replay(session):
     db = get_db()
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
-    db.replay(ltm_final, 3)
+    db.rollback(ltm_final, 3, replay=True)
 
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
@@ -392,7 +392,7 @@ def test_restart(session):
     db = get_db()
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
-    db.replay(ltm_final, 0)
+    db.rollback(ltm_final, 0, replay=True)
 
     ltm_restart = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 

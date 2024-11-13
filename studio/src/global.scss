@@ -195,6 +195,12 @@ tr th {
   text-overflow: ellipsis;
 }
 
+.th-icon {
+  display: flex;
+  align-items: center;
+  font-size: inherit;
+  gap: .25rem;
+}
 
 .table-header {
   display: flex;

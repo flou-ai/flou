@@ -25,6 +25,13 @@ class TrialCreateBase(TrialBase):
 
 class TrialCreate(TrialCreateBase):
     experiment_id: UUID
+    name: str
+
+
+class AddTrial(BaseModel):
+    name: str | None = None
+    previous_trial_outputs: dict = {}
+    inputs: dict = {}
 
 
 class ExperimentBase(BaseModel):

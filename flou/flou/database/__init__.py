@@ -5,7 +5,7 @@ from flou.conf import settings
 from .utils import json_dumps
 
 
-engine = create_engine(settings.database.url, echo=True, json_serializer=json_dumps)
+engine = create_engine(settings.database.url, json_serializer=json_dumps)  # , echo=True)
 
 
 def get_db(session=None):

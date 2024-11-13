@@ -15,11 +15,12 @@ from flou.engine.schemas import (
     LTM,
     LTMCreation,
     Transition,
-    SnapshotIndex,
+    Rollback,
     RollbackIndex,
     ErrorList,
 )
 from flou.experiments.models import Trial
+from flou.experiments.schemas import AddTrial
 
 from flou.engine.models import Error
 from flou.registry import registry
@@ -74,7 +75,7 @@ async def create_ltm(ltm_creation: LTMCreation):
 async def get_ltm(
     ltm_id: int = Path(..., description="The LTM instance id"),
     rollbacks: bool = Query(False, description="Include rollbacks"),
-    session = Depends(get_session),
+    session=Depends(get_session),
 ):
     """
     Get an LTM instance's data
@@ -96,16 +97,13 @@ async def get_ltm(
         data["rollbacks"] = ltm._rollbacks
 
     # gather the errors
-    data["errors"] = session.scalars(
-        select(Error).where(Error.ltm_id == ltm_id)
-    ).all()
+    data["errors"] = session.scalars(select(Error).where(Error.ltm_id == ltm_id)).all()
 
     # Check if any trials reference this LTM and get experiment ID
-    trial = session.scalar(
-        select(Trial).where(Trial.ltm_id == ltm_id).limit(1)
-    )
-    if trial:
-        data["experiment_id"] = trial.experiment_id
+    current_trial = session.scalar(select(Trial).where(Trial.ltm_id == ltm_id).limit(1))
+    if current_trial:
+        data["experiment_id"] = current_trial.experiment_id
+        data["current_trial"] = current_trial
 
     return data
 
@@ -206,28 +204,48 @@ async def websocket_endpoint(
 
 @router.post("/ltm/{ltm_id}/rollback")
 async def rollback(
-    snapshot: SnapshotIndex, ltm_id: int = Path(..., description="The LTM instance id")
+    snapshot: Rollback,
+    new_trial: AddTrial | None = None,
+    ltm_id: int = Path(..., description="The LTM instance id"),
+    session=Depends(get_session),
 ):
     """
-    Rollback to a previous snapshot
+    Rollback to a previous snapshot.
+
+    If the LTM is part of a trial, a new trial is created
     """
     db = get_db()
     ltm = db.load_ltm(ltm_id, snapshots=True)
-    db.rollback(ltm, snapshot.index, reason="manual")
-    return True
+    ltm = db.rollback(ltm, snapshot.index, replay=snapshot.replay, reason="replay" if snapshot.replay else "manual")
 
+    trial = (
+        session.query(Trial)
+        .filter(Trial.ltm_id == ltm_id)
+        .order_by(Trial.created_at.desc())
+        .first()
+    )
 
-@router.post("/ltm/{ltm_id}/replay")
-async def replay(
-    snapshot: SnapshotIndex, ltm_id: int = Path(..., description="The LTM instance id")
-):
-    """
-    Rollback to a previous transition snapshot and replay the transition
-    """
-    db = get_db()
-    ltm = db.load_ltm(ltm_id, snapshots=True)
-    db.replay(ltm, snapshot.index)
-    return True
+    result = {"success": True}
+
+    if trial:
+        trial.outputs = new_trial.previous_trial_outputs
+
+        # Create new trial with same name and experiment
+        new_trial = Trial(
+            experiment_id=trial.experiment_id,
+            ltm_id=trial.ltm_id,
+            **new_trial.model_dump(include={"inputs"}),
+            name=new_trial.name or trial.name,
+            rollback_index=len(ltm._rollbacks or []),  # this rollback doesn't exist yet
+            snapshot_index=snapshot.index,
+        )
+        session.add(new_trial)
+        session.add(trial)
+        session.commit()
+
+        result["trial"] = new_trial
+
+    return result
 
 
 @router.post("/ltm/{ltm_id}/recover-rollback")
@@ -246,9 +264,9 @@ async def rollback(
 
 @router.post("/ltm/{ltm_id}/retry")
 async def retry(
-     error_list: ErrorList,
-     ltm_id: int = Path(..., description="The LTM instance id"),
-     session = Depends(get_session),
+    error_list: ErrorList,
+    ltm_id: int = Path(..., description="The LTM instance id"),
+    session=Depends(get_session),
 ):
     """
     Retries a failed execution/transition
