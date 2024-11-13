@@ -1,19 +1,14 @@
 <script lang="ts">
 	export let level: 'info' | 'success' | 'warning' | 'danger' = 'info';
+	export let icon: any = null;
 	import { CheckCircle, Info, Warning, XCircle } from 'phosphor-svelte';
+
+	$: icon = icon ?? (level === 'info' ? Info : level === 'warning' ? Warning : level === 'danger' ? XCircle : CheckCircle);
 </script>
 
 <div class={'alert ' + level}>
 	<div class="icon">
-		{#if level === 'info'}
-			<Info size="1.5rem" />
-		{:else if level === 'warning'}
-			<Warning size="1.5rem" />
-		{:else if level === 'danger'}
-			<XCircle size="1.5rem" />
-		{:else if level === 'success'}
-			<CheckCircle size="1.5rem" />
-		{/if}
+		<svelte:component this={icon} size="1.5rem" />
 	</div>
 	<div>
 		<slot></slot>

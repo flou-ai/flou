@@ -19,6 +19,7 @@ from flou.engine.schemas import (
     RollbackIndex,
     ErrorList,
 )
+from flou.experiments.models import Trial
 
 from flou.engine.models import Error
 from flou.registry import registry
@@ -98,6 +99,14 @@ async def get_ltm(
     data["errors"] = session.scalars(
         select(Error).where(Error.ltm_id == ltm_id)
     ).all()
+
+    # Check if any trials reference this LTM and get experiment ID
+    trial = session.scalar(
+        select(Trial).where(Trial.ltm_id == ltm_id).limit(1)
+    )
+    if trial:
+        data["experiment_id"] = trial.experiment_id
+
     return data
 
 

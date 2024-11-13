@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { invalidateAll } from '$app/navigation';
+	import Alert from '$lib/UI/Alert.svelte';
     import Block from '$lib/UI/Block.svelte';
     import LTMGraph from '$lib/UI/Graph/LTMGraph.svelte';
     import TransitionForm from '$lib/Components/TransitionForm.svelte';
@@ -10,12 +11,12 @@
     import WebSocket from '$lib/WebSocket.svelte';
     import State from '$lib/Components/State.svelte';
     import { PUBLIC_API_BASE_URL } from '$env/static/public';
-    import { TreeStructure } from 'phosphor-svelte';
+    import { TreeStructure, Flask } from 'phosphor-svelte';
 
     import type { PageData } from './$types';
     export let data: PageData;
 
-    $: ({ ltm, params } = data);
+    $: ({ ltm, experiment, params } = data);
     $: console.log(ltm);
 
     const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.params.id}`;
@@ -63,6 +64,11 @@
 </script>
 
 <WebSocket ltmID={params.id} on:update={updateLtm} />
+{#if experiment }
+<Alert level="info" icon={Flask}>
+	This LTM is part of the experiment <b>#{experiment.index} {experiment.name}</b>. To view the experiment, click <a href="/experiments/{ltm.experiment_id}">here</a>.
+</Alert>
+{/if}
 <div class="container">
     {#if ltm}
         <div id="title">
