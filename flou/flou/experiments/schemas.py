@@ -24,7 +24,6 @@ class TrialCreateBase(TrialBase):
 
 
 class TrialCreate(TrialCreateBase):
-    experiment_id: UUID
     name: str
 
 

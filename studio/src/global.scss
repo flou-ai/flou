@@ -205,6 +205,7 @@ tr th {
 .table-header {
   display: flex;
   justify-content: space-between;
+  width: 100%;
 }
 
 .table-controls {
@@ -213,11 +214,11 @@ tr th {
   justify-content: end;
   padding: 0 1rem;
 
-  a {
+  a, button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--black-40, rgba(28, 28, 28, 0.40));
+    color: var(--black-80, rgba(28, 28, 28, 0.40));
     text-decoration: none;
 
     &:hover {

@@ -5,11 +5,12 @@ const registryUrl = `${PUBLIC_API_BASE_URL}ltm/registry`;
 
 export let getRegistry = async (fetch: any) => {
     await fetch(registryUrl)
-        .then((response) => response.json())
-        .then((data) => {
+        .then((response: any) => response.json())
+        .then((data: any) => {
             registry = data;
+            return data;
         })
-        .catch((error) => {
+        .catch((error: any) => {
             console.log(error);
             return [];
         });

@@ -242,3 +242,27 @@ def test_rollback_trial(session):
     assert trials[1].name == rollback_data["new_trial"]["name"]
     assert trials[1].rollback_index == 1
     assert trials[1].snapshot_index == 2
+
+
+def test_create_trial(session):
+    # First create an experiment
+    experiment = Experiment(name="Test Experiment", description="Test experiment")
+    session.add(experiment)
+    session.commit()
+
+    # Create trial data
+    trial_creation_data = {
+        "name": "New Trial",
+        "fqn": "tests.test_ltm.Root",
+    }
+
+    response = client.post(f"/api/v0/experiments/{experiment.id}/trials", json=trial_creation_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert "id" in data
+
+    # Verify trial was created correctly
+    trials = session.query(Trial).filter(Trial.experiment_id == experiment.id).all()
+    assert len(trials) == 1
+    assert trials[0].name == "New Trial"
+    assert trials[0].ltm_id == data["id"]

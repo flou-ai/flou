@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ListMagnifyingGlass } from 'phosphor-svelte';
+	import { ListMagnifyingGlass, Plus } from 'phosphor-svelte';
 	import Block from '$lib/UI/Block.svelte';
 	import { formatDate } from '$lib/utils';
 	import InlineEditTextArea from '$lib/UI/InlineEditTextArea.svelte';
@@ -79,7 +79,14 @@
 			</dl> -->
 		</Block>
 		<Block>
-			<h3>Trials</h3>
+			<div class="table-header">
+				<h3>Trials</h3>
+				<div class="table-controls">
+					<a href="/experiments/{data.experiment.id}/trials/new">
+						<Plus size="1rem" /> New Trial
+					</a>
+				</div>
+			</div>
 			<table>
 				<tr>
 					<th>#</th>

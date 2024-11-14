@@ -109,15 +109,26 @@ async def list_trials(experiment_id: uuid.UUID, session = Depends(get_session)):
     ).all()
     return trials
 
-@router.post("/{experiment_id}/trials/", response_model=TrialList)
+@router.post("/{experiment_id}/trials/", response_model=LTMId)
 async def create_trial(experiment_id: uuid.UUID, trial: TrialCreate, session = Depends(get_session)):
     if not session.get(Experiment, experiment_id):
         raise HTTPException(status_code=404, detail="Experiment not found")
-    new_trial = Trial(experiment_id=experiment_id, **trial.model_dump())
+
+    # for now we are just creating a new LTM based on fqn
+    trial_kwargs = trial.model_dump()
+    fqn = trial_kwargs.pop("fqn")
+    db = get_db(session)
+    ltm = db.get_ltm_class(fqn)()
+
+    # create the LTM and assign it to the trial
+    trial_kwargs["ltm_id"] = ltm.start(payload={}, playground=True)
+
+    new_trial = Trial(experiment_id=experiment_id, **trial_kwargs)
     session.add(new_trial)
     session.commit()
     session.refresh(new_trial)
-    return new_trial
+    return {"id": new_trial.ltm_id}
+
 
 @router.get("/{experiment_id}/trials/{trial_id}", response_model=TrialList)
 async def get_trial(experiment_id: uuid.UUID, trial_id: uuid.UUID, session = Depends(get_session)):

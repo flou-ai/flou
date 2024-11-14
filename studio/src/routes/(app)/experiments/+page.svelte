@@ -69,8 +69,4 @@
 {/if}
 
 <style lang="scss">
-	.table-header {
-		display: flex;
-		justify-content: space-between;
-	}
 </style>
