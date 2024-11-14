@@ -17,7 +17,7 @@ class Experiment(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")
     )
-    index: Mapped[int] = mapped_column(default=0, nullable=False)
+    index: Mapped[int] = mapped_column(default=1, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(), nullable=False)
     inputs: Mapped[dict] = mapped_column(JSONType(), default=dict, nullable=False)
@@ -34,7 +34,7 @@ experiments_set_index = PGFunction(
         RETURNS trigger AS $$
         BEGIN
             NEW.index := COALESCE(
-                (SELECT MAX(index) FROM experiments_experiments), -1
+                (SELECT MAX(index) FROM experiments_experiments), 0
             ) + 1;
             RETURN NEW;
         END;
@@ -62,7 +62,7 @@ class Trial(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")
     )
-    index: Mapped[int] = mapped_column(default=0, nullable=False)
+    index: Mapped[int] = mapped_column(default=1, nullable=False)
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiments_experiments.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     ltm_id: Mapped[int] = mapped_column(ForeignKey("ltm_ltms.id"), nullable=False)
@@ -82,7 +82,7 @@ trials_set_index = PGFunction(
         RETURNS trigger AS $$
         BEGIN
             NEW.index := COALESCE(
-                (SELECT MAX(index) FROM experiments_trials WHERE experiment_id = NEW.experiment_id), -1
+                (SELECT MAX(index) FROM experiments_trials WHERE experiment_id = NEW.experiment_id AND name = NEW.name), 0
             ) + 1;
             RETURN NEW;
         END;

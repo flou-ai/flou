@@ -68,7 +68,7 @@
 <Alert level="info" icon={Flask}>
 	This LTM is part of the experiment <b>#{experiment.index} {experiment.name}</b>. To view the experiment, click <a href="/experiments/{ltm.experiment_id}">here</a>.
 
-	<p>Trial <b>#{ltm.current_trial.index} {ltm.current_trial.name}</b></p>
+	<p>Trial <b>{ltm.current_trial.name} #{ltm.current_trial.index}</b></p>
 </Alert>
 {/if}
 <div class="container">

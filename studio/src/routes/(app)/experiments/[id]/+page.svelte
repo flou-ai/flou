@@ -80,10 +80,10 @@
 					<th>Updated At</th>
 					<th></th>
 				</tr>
-				{#each data.experiment.trials as trial}
+				{#each data.experiment.trials as trial, i}
 					<tr>
-						<td>{trial.index}</td>
-						<td>{trial.name}</td>
+						<td>{i + 1}</td>
+						<td>{trial.name} #{trial.index}</td>
 						<td>{formatDate(trial.created_at)}</td>
 						<td>{formatDate(trial.updated_at)}</td>
 						<td>
