@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ListMagnifyingGlass } from 'phosphor-svelte';
 	import Block from '$lib/UI/Block.svelte';
 	import { formatDate } from '$lib/utils';
 	import InlineEditTextArea from '$lib/UI/InlineEditTextArea.svelte';
@@ -9,6 +10,13 @@
 	function handleDescriptionSave(newDescription: string) {
 		data.experiment.description = newDescription;
 		// Add any additional logic to persist the change if necessary
+	}
+
+	function isRollback(trialIndex: number): boolean {
+		const trial = data.experiment.trials[trialIndex];
+		return data.experiment.trials.some(
+			(t: any) => t.ltm_id === trial.ltm_id && new Date(t.created_at) > new Date(trial.created_at)
+		);
 	}
 </script>
 
@@ -87,9 +95,15 @@
 						<td>{formatDate(trial.created_at)}</td>
 						<td>{formatDate(trial.updated_at)}</td>
 						<td>
-							<!-- <a href="experiments/{experiment.id}">
-						<ListMagnifyingGlass size="1.25rem" />
-					</a> -->
+							{#if isRollback(i)}
+								<a href="/inspect/{trial.ltm_id}?rollback={trial.rollback_index}">
+									<ListMagnifyingGlass size="1.25rem" />
+								</a>
+							{:else}
+								<a href="/playground/{trial.ltm_id}">
+									<ListMagnifyingGlass size="1.25rem" />
+								</a>
+							{/if}
 						</td>
 					</tr>
 				{/each}

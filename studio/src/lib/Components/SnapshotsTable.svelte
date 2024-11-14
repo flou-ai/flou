@@ -15,6 +15,7 @@
 	import Tab from '../UI/Tab.svelte';
 	import SnapshotsTree from '$lib/Components/SnapshotsTree.svelte';
 	import NewTrialFromRollback from '$lib/Components/NewTrialFromRollback.svelte';
+	import { formatDate } from '$lib/utils';
 
 	import { PUBLIC_API_BASE_URL } from '$env/static/public';
 	import Paginator from '$lib/UI/Paginator.svelte';
@@ -203,7 +204,7 @@
 						<td title={JSON.stringify(snapshot.item)}>
 							<SnapshotItem item={snapshot.item}></SnapshotItem>
 						</td>
-						<td title={snapshot.time}>{snapshot.time}</td>
+						<td title={formatDate(snapshot.time)}>{formatDate(snapshot.time)}</td>
 						{#if controls}
 							{#if experiment}
 								<td>

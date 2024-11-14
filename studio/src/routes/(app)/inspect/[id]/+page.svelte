@@ -8,17 +8,18 @@
 	import State from '$lib/Components/State.svelte';
 	import SnapshotNav from '$lib/Components/SnapshotNav.svelte';
 	import WebSocket from '$lib/WebSocket.svelte';
-	import { TreeStructure, Pinwheel } from 'phosphor-svelte';
+	import { TreeStructure, Pinwheel, Flask } from 'phosphor-svelte';
 	import { PUBLIC_API_BASE_URL } from '$env/static/public';
+	import { formatDate } from '$lib/utils';
 
 	import type { PageData } from './$types';
 	export let data: PageData;
+
+	$: ({ ltm, rollback, experiment, params } = data);
+
 	const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.params.id}?rollbacks=True`;
 
-	let ltm: any;
-
 	onMount(async () => {
-		ltm = data.ltm;
 		snapshotIndex = ltm.snapshots.length - 1;
 	});
 
@@ -80,11 +81,20 @@
 	}
 </script>
 
-<WebSocket ltmID={data.params.id} on:update={updateLtm} />
-{#if data.rollback }
-<Alert level="info">
-	You are currently viewing a rollback of the LTM. To view the latest version, click <a href="/playground/{data.params.id}">here</a>.
-</Alert>
+<WebSocket ltmID={params.id} on:update={updateLtm} />
+{#if experiment}
+	<Alert level="info" icon={Flask}>
+		This LTM is part of the experiment <b>#{experiment.index} {experiment.name}</b>. To view the
+		experiment, click <a href="/experiments/{ltm.experiment_id}">here</a>.
+
+		<p>Trial <b>{ltm.current_trial.name} #{ltm.current_trial.index}</b></p>
+	</Alert>
+{:else if rollback}
+	<Alert level="info">
+		You are currently viewing a rollback of the LTM. To view the latest version, click <a
+			href="/playground/{data.params.id}">here</a
+		>.
+	</Alert>
 {/if}
 <div class="container">
 	{#if ltm}
@@ -99,7 +109,7 @@
 					</div>
 					<dl class="details">
 						<dt>ID</dt>
-						<dd>{data.params.id}</dd>
+						<dd>{params.id}</dd>
 						<dt>Fqn</dt>
 						<dd>{ltm.fqn}</dd>
 						<dt>Kwargs</dt>
@@ -108,9 +118,9 @@
 					<hr />
 					<dl class="details">
 						<dt>Created At</dt>
-						<dd>{ltm.created_at}</dd>
+						<dd>{formatDate(ltm.created_at)}</dd>
 						<dt>Updated At</dt>
-						<dd>{ltm.updated_at}</dd>
+						<dd>{formatDate(ltm.updated_at)}</dd>
 					</dl>
 				</Block>
 			</div>

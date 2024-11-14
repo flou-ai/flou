@@ -34,6 +34,11 @@ class AddTrial(BaseModel):
     inputs: dict = {}
 
 
+class TrialDetail(TrialList):
+    ltm_id: int
+    rollback_index: int
+
+
 class ExperimentBase(BaseModel):
     name: str
     description: str | None = None
@@ -56,4 +61,4 @@ class ExperimentCreate(ExperimentBase):
 
 class ExperimentDetail(ExperimentId, ExperimentBase, TimestampedModel):
     index: int
-    trials: list[TrialList] = []
+    trials: list[TrialDetail] = []
