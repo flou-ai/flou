@@ -1,11 +1,20 @@
 <script lang="ts">
-	import { Play, ClockClockwise, ArrowArcLeft, Plus, Minus, Queue, TestTube } from 'phosphor-svelte';
+	import {
+		Play,
+		ClockClockwise,
+		ArrowArcLeft,
+		Plus,
+		Minus,
+		Queue,
+		TestTube
+	} from 'phosphor-svelte';
 	import * as jsonpatch from 'fast-json-patch';
 	import { createEventDispatcher } from 'svelte';
 	import { isEqual } from 'lodash';
 	import Tabs from '../UI/Tabs.svelte';
 	import Tab from '../UI/Tab.svelte';
 	import SnapshotsTree from '$lib/Components/SnapshotsTree.svelte';
+	import NewTrialFromRollback from '$lib/Components/NewTrialFromRollback.svelte';
 
 	import { PUBLIC_API_BASE_URL } from '$env/static/public';
 	import Paginator from '$lib/UI/Paginator.svelte';
@@ -23,6 +32,10 @@
 	let dispatch = createEventDispatcher();
 
 	let showErrorDetails: any = {};
+
+	let showTrialModal = false;
+	let selectedSnapshotIndex: number;
+	let selectedAction: 'rollback' | 'replay' = 'rollback';
 
 	$: {
 		if (ltm && ltm.snapshots.length > 0) snapshot = getSnapshotFromIndex(snapshotIndex);
@@ -88,13 +101,20 @@
 		return full_snapshot;
 	};
 
-	let rollback = async (snapshot_index: number, replay: boolean = false) => {
-		let postData = {
+	let rollback = async (
+		snapshot_index: number,
+		replay: boolean = false,
+		newTrialData: any = undefined
+	) => {
+		let postData: any = {
 			snapshot: {
 				index: snapshot_index,
-				replay: replay,
-			},
+				replay: replay
+			}
 		};
+		if (newTrialData) {
+			postData['new_trial'] = newTrialData;
+		}
 		await fetch(`${ltmUrl}/rollback`, {
 			method: 'POST',
 			headers: {
@@ -103,12 +123,15 @@
 			body: JSON.stringify(postData)
 		})
 			.then((response) => {
-				if (replay) {  // replay
-					snapshotIndex--;
+				if (replay) {
+					// replay
 					ltm = { ...ltm, snapshots: ltm.snapshots.slice(0, snapshot_index) };
-				} else {  // rollback
+					snapshot_index--;
+				} else {
+					// rollback
 					ltm = { ...ltm, snapshots: ltm.snapshots.slice(0, snapshot_index + 1) };
 				}
+				snapshotIndex = snapshot_index;
 				dispatch('reloadLtm');
 				return response.json();
 			})
@@ -187,7 +210,9 @@
 									<div class="snapshot-controls">
 										<button
 											on:click={() => {
-												rollback(i);
+												selectedAction = 'rollback';
+												selectedSnapshotIndex = i;
+												showTrialModal = true;
 											}}
 											title="Rollback"
 										>
@@ -196,7 +221,9 @@
 										{#if snapshot.reason === 'transition' || snapshot.reason === 'start'}
 											<button
 												on:click={() => {
-													rollback(i, true);
+													selectedAction = 'replay';
+													selectedSnapshotIndex = i;
+													showTrialModal = true;
 												}}
 												title="Replay"
 											>
@@ -323,6 +350,18 @@
 		</div>
 	</Tab>
 </Tabs>
+
+{#if experiment}
+	<NewTrialFromRollback
+		bind:showTrialModal
+		bind:selectedAction
+		bind:selectedSnapshotIndex
+		bind:ltm
+		on:newTrial={(event) => {
+			rollback(event.detail.snapshotIndex, event.detail.replay, event.detail.newTrialData);
+		}}
+	/>
+{/if}
 
 <style lang="scss">
 	.controls {

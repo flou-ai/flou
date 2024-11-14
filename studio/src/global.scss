@@ -259,6 +259,8 @@ form label:not(fieldset.radio > label) textarea {
   border-radius: var(--8, 0.5rem);
   border: none;
   width: 100%;
+  background: var(--white-80);
+  color: var(--black-100);
 }
 
 form label:not(fieldset.radio > label) input:focus,

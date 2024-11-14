@@ -100,7 +100,7 @@ async def get_ltm(
     data["errors"] = session.scalars(select(Error).where(Error.ltm_id == ltm_id)).all()
 
     # Check if any trials reference this LTM and get experiment ID
-    current_trial = session.scalar(select(Trial).where(Trial.ltm_id == ltm_id).limit(1))
+    current_trial = session.scalar(select(Trial).where(Trial.ltm_id == ltm_id).order_by(Trial.created_at.desc()).limit(1))
     if current_trial:
         data["experiment_id"] = current_trial.experiment_id
         data["current_trial"] = current_trial

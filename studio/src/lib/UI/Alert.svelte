@@ -45,7 +45,7 @@
 			font-weight: inherit;
 			color: #1c1c1c;
 		}
-		:global(p) {
+		& :global(p) {
 			&:not(:first-child) {
 				margin-bottom: 0;
 			}
