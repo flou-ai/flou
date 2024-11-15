@@ -141,7 +141,7 @@ async def transition(
     )
 
     # wait until another transition is completed
-    if transition.wait_until_transition:
+    .storieiif transition.wait_until_transition:
         wait_namespace, wait_label = transition.wait_until_transition.split(":")
         try:
             async with redis.pubsub() as pubsub:
@@ -154,6 +154,9 @@ async def transition(
 
                         # check for matching namespace
                         if wait_namespace != item["namespace"]:
+                            continue
+
+                        if wait_label != item["label"]:
                             continue
 
                         # check for matching label (with params)
