@@ -27,9 +27,11 @@
     let snapshotIndex = 0;
     let snapshot: any = {};
 
-    onMount(async () => {
-        snapshotIndex = ltm.snapshots.length - 1;
-    });
+    $: {
+        if (ltm?.snapshots) {
+            snapshotIndex = ltm.snapshots.length - 1;
+        }
+    }
 
     let updateLtm = (event: CustomEvent) => {
         const data: any = event.detail;
@@ -141,7 +143,7 @@
         </div>
         <div id="rollbacks">
             <Block>
-                <Rollabacks {ltm} ltmId={params.id} on:reloadLtm={invalidateAll} />
+                <Rollabacks {ltm} {experiment} ltmId={params.id} on:reloadLtm={invalidateAll} />
             </Block>
         </div>
     {:else}

@@ -204,7 +204,8 @@ async def websocket_endpoint(
 
 @router.post("/ltm/{ltm_id}/rollback")
 async def rollback(
-    snapshot: Rollback,
+    snapshot: Rollback | None = None,
+    rollback: RollbackIndex | None = None,
     new_trial: AddTrial | None = None,
     ltm_id: int = Path(..., description="The LTM instance id"),
     session=Depends(get_session),
@@ -216,7 +217,18 @@ async def rollback(
     """
     db = get_db()
     ltm = db.load_ltm(ltm_id, snapshots=True)
-    ltm = db.rollback(ltm, snapshot.index, replay=snapshot.replay, reason="replay" if snapshot.replay else "manual")
+    rollback_args = {
+       "ltm": ltm,
+    }
+    if snapshot:
+        rollback_args["snapshot_index"] = snapshot.index
+        rollback_args["replay"] = snapshot.replay
+        rollback_args["reason"] = "replay" if snapshot.replay else "manual"
+    elif rollback:
+        rollback_args["rollback_index"] = rollback.index
+        rollback_args["reason"] = "recover rollback"
+
+    ltm = db.rollback(**rollback_args)
 
     trial = (
         session.query(Trial)
@@ -228,7 +240,9 @@ async def rollback(
     result = {"success": True}
 
     if trial:
-        trial.outputs = new_trial.previous_trial_outputs
+        if new_trial and new_trial.previous_trial_outputs:
+            trial.outputs = new_trial.previous_trial_outputs
+            session.add(trial)
 
         # Create new trial with same name and experiment
         new_trial = Trial(
@@ -237,29 +251,14 @@ async def rollback(
             **new_trial.model_dump(include={"inputs"}),
             name=new_trial.name or trial.name,
             rollback_index=len(ltm._rollbacks or []),  # this rollback doesn't exist yet
-            snapshot_index=snapshot.index,
+            snapshot_index=snapshot.index if snapshot else 0,
         )
         session.add(new_trial)
-        session.add(trial)
         session.commit()
 
         result["trial"] = new_trial
 
     return result
-
-
-@router.post("/ltm/{ltm_id}/recover-rollback")
-async def rollback(
-    rollback: RollbackIndex,
-    ltm_id: int = Path(..., description="The LTM instance id"),
-):
-    """
-    Undo a rollback
-    """
-    db = get_db()
-    ltm = db.load_ltm(ltm_id, snapshots=True)
-    db.rollback(ltm, rollback_index=rollback.index, reason="recover rollback")
-    return True
 
 
 @router.post("/ltm/{ltm_id}/retry")

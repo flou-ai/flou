@@ -196,7 +196,9 @@ def test_rollback_trial(session):
 
     ltm = PayloadLTM()
     ltm.start()
-    trial = Trial(name="Initial Trial", ltm_id=ltm.id, rollback_index=0, snapshot_index=0)
+    trial = Trial(
+        name="Initial Trial", ltm_id=ltm.id, rollback_index=0, snapshot_index=0
+    )
     experiment = Experiment(
         name="Test Experiment", description="Test experiment for rollback"
     )
@@ -256,7 +258,9 @@ def test_create_trial(session):
         "fqn": "tests.test_ltm.Root",
     }
 
-    response = client.post(f"/api/v0/experiments/{experiment.id}/trials", json=trial_creation_data)
+    response = client.post(
+        f"/api/v0/experiments/{experiment.id}/trials", json=trial_creation_data
+    )
     assert response.status_code == 200
     data = response.json()
     assert "id" in data
@@ -266,3 +270,70 @@ def test_create_trial(session):
     assert len(trials) == 1
     assert trials[0].name == "New Trial"
     assert trials[0].ltm_id == data["id"]
+
+
+def test_recover_rollback(session):
+    # Create experiment and initial trial
+    from .test_ltm import PayloadLTM
+
+    ltm = PayloadLTM()
+    ltm.start()
+    trial = Trial(
+        name="Initial Trial", ltm_id=ltm.id, rollback_index=0, snapshot_index=0
+    )
+    experiment = Experiment(
+        name="Test Experiment", description="Test experiment for rollback recovery"
+    )
+    experiment.trials.append(trial)
+    session.add(experiment)
+    session.flush()
+
+    # Make transitions and rollbacks
+    from flou.engine import get_engine
+
+    engine = get_engine()
+    db = get_db()
+
+    # First transition
+    engine.transition(ltm, "go", payload={"some": "data"})
+
+    # First rollback using database directly
+    ltm_with_snapshots = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
+    db.rollback(ltm_with_snapshots, snapshot_index=2)
+
+    # Second transition
+    engine.transition(ltm, "go", payload={"other": "data"})
+
+    # Recover first rollback using API
+    recover_data = {
+        "rollback": {
+            "index": 0,
+        },
+        "new_trial": {
+            "name": "Recovery Trial",
+            "previous_trial_outputs": {},
+            "inputs": {},
+        },
+    }
+    response = client.post(f"/api/v0/ltm/{ltm.id}/rollback", json=recover_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] == True
+    assert "trial" in data
+
+    # Verify trials state
+    trials = (
+        session.query(Trial)
+        .filter(Trial.experiment_id == experiment.id)
+        .order_by(Trial.created_at)
+        .all()
+    )
+    assert len(trials) == 2
+
+    # Check recovery trial properties
+    recovery_trial = trials[-1]
+    assert recovery_trial.ltm_id == ltm.id
+    assert recovery_trial.experiment_id == trial.experiment_id
+    assert recovery_trial.name == "Recovery Trial"
+    assert recovery_trial.rollback_index == 2  # Third rollback (including the recovery)
+    assert recovery_trial.snapshot_index == 0  # Rollback recovery uses index 0

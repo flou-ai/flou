@@ -17,8 +17,8 @@
     });
 
     export let showTrialModal = false;
-    export let selectedAction: 'rollback' | 'replay' = 'rollback';
-    export let selectedSnapshotIndex: number;
+    export let selectedAction: 'rollback' | 'replay' | 'recover-rollback' = 'rollback';
+    export let selectedIndex: number;
     export let ltm: any = {};
 
     const { form, errors, message, constraints, enhance } = superForm(
@@ -31,7 +31,7 @@
                 if (form.valid) {
                     showTrialModal = false;
                     dispatch('newTrial', {
-                        snapshotIndex: selectedSnapshotIndex,
+                        index: selectedIndex,
                         replay: selectedAction === 'replay',
                         newTrialData: form.data
                     });
@@ -52,17 +52,26 @@
             <TestTube size="2.5rem" />
         </div>
         <div>
-            {#if selectedAction === 'rollback'}
-                Rollback
+            {#if selectedAction === 'recover-rollback'}
+                {@const lastSnapshot = ltm.rollbacks[selectedIndex].snapshots.at(-1)}
+                Recover Rollback #{selectedIndex}
+                <div class="snapshot-item">
+                    Last Snapshot
+                    <SnapshotItem item={lastSnapshot.item}></SnapshotItem>
+                </div>
             {:else}
-                Replay
-            {/if}
-            from snapshot #{selectedSnapshotIndex}
-            <div class="snapshot-item">
-                {#if ltm.snapshots[selectedSnapshotIndex]}
-                    <SnapshotItem item={ltm.snapshots[selectedSnapshotIndex].item}></SnapshotItem>
+                {#if selectedAction === 'rollback'}
+                    Rollback
+                {:else}
+                    Replay
                 {/if}
-            </div>
+                from snapshot #{selectedIndex}
+                <div class="snapshot-item">
+                    {#if ltm.snapshots[selectedIndex]}
+                        <SnapshotItem item={ltm.snapshots[selectedIndex].item}></SnapshotItem>
+                    {/if}
+                </div>
+            {/if}
         </div>
     </div>
     {#if $form}
