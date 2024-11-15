@@ -227,6 +227,18 @@ tr th {
   }
 }
 
+.table-row-controls {
+  display: flex;
+  flex-direction: row;
+  a, button {
+    color: var(--black-80, rgba(28, 28, 28, 0.40));
+
+    &:hover {
+      color: var(--black-100, #1c1c1c);
+    }
+  }
+}
+
 /* Forms */
 
 form,

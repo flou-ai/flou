@@ -52,25 +52,28 @@
             <TestTube size="2.5rem" />
         </div>
         <div>
-            {#if selectedAction === 'recover-rollback'}
-                {@const lastSnapshot = ltm.rollbacks[selectedIndex].snapshots.at(-1)}
-                Recover Rollback #{selectedIndex}
-                <div class="snapshot-item">
-                    Last Snapshot
-                    <SnapshotItem item={lastSnapshot.item}></SnapshotItem>
-                </div>
-            {:else}
-                {#if selectedAction === 'rollback'}
-                    Rollback
+            {#if showTrialModal}
+                {#if selectedAction === 'recover-rollback'}
+                    {@const lastSnapshot = ltm.rollbacks[selectedIndex].snapshots.at(-1)}
+
+                    Recover Rollback #{selectedIndex}
+                    <div class="snapshot-item">
+                        Last Snapshot
+                        <SnapshotItem item={lastSnapshot.item}></SnapshotItem>
+                    </div>
                 {:else}
-                    Replay
-                {/if}
-                from snapshot #{selectedIndex}
-                <div class="snapshot-item">
-                    {#if ltm.snapshots[selectedIndex]}
-                        <SnapshotItem item={ltm.snapshots[selectedIndex].item}></SnapshotItem>
+                    {#if selectedAction === 'rollback'}
+                        Rollback
+                    {:else}
+                        Replay
                     {/if}
-                </div>
+                    from snapshot #{selectedIndex}
+                    <div class="snapshot-item">
+                        {#if ltm.snapshots[selectedIndex]}
+                            <SnapshotItem item={ltm.snapshots[selectedIndex].item}></SnapshotItem>
+                        {/if}
+                    </div>
+                {/if}
             {/if}
         </div>
     </div>

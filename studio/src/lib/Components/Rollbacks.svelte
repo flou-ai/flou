@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ClockCounterClockwise, Lifebuoy, TestTube } from 'phosphor-svelte';
+    import { ClockCounterClockwise, Lifebuoy, TestTube, ListMagnifyingGlass } from 'phosphor-svelte';
     import { createEventDispatcher } from 'svelte';
 
     import Paginator from '$lib/UI/Paginator.svelte';
@@ -56,6 +56,9 @@
         <th>#Snapshots</th>
         <th>Last Snapshot</th>
         <th>Time</th>
+        {#if experiment}
+            <th>Trial</th>
+        {/if}
         <th>
             {#if experiment}
                 <span class="th-icon">New trial <TestTube /></span>
@@ -75,8 +78,12 @@
             <td title={`${lastSnapshot.reason}`}
                 >{lastSnapshot.reason}: <SnapshotItem item={lastSnapshot.item} />
             </td><td title={formatDate(rollback.time)}>{formatDate(rollback.time)}</td>
+            {#if experiment}
+                {@const trial = experiment.trials.find((t) => t.rollback_index === i)}
+                <td title={trial.name}>{trial.name} #{trial.index}</td>
+            {/if}
             <td>
-                <div class="snapshot-controls">
+                <div class="table-row-controls">
                     {#if experiment}
                         <button
                             on:click={() => {
@@ -97,6 +104,9 @@
                             <Lifebuoy size="1.25rem" />
                         </button>
                     {/if}
+                    <a class="button" href={`/inspect/${ltmId}?rollback=${i}`} title="View trial">
+                        <ListMagnifyingGlass size="1.25rem" />
+                    </a>
                 </div>
             </td>
         </tr>{/each}
