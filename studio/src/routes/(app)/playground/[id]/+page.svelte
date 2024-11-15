@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import { invalidateAll } from '$app/navigation';
 	import Alert from '$lib/UI/Alert.svelte';
     import Block from '$lib/UI/Block.svelte';
@@ -10,6 +9,7 @@
     import Rollabacks from '$lib/Components/Rollbacks.svelte';
     import WebSocket from '$lib/WebSocket.svelte';
     import State from '$lib/Components/State.svelte';
+    import { formatDate } from '$lib/utils';
     import { PUBLIC_API_BASE_URL } from '$env/static/public';
     import { TreeStructure, Flask } from 'phosphor-svelte';
 
@@ -85,14 +85,14 @@
                         <dt>Fqn</dt>
                         <dd>{ltm.fqn}</dd>
                         <dt>Kwargs</dt>
-                        <dd>{JSON.stringify(ltm.kwargs)}</dd>
+                        <dd>{#if ltm.kwargs}{JSON.stringify(ltm.kwargs)}{:else}None{/if}</dd>
                     </dl>
                     <hr />
                     <dl class="details">
                         <dt>Created At</dt>
-                        <dd>{ltm.created_at}</dd>
+                        <dd>{formatDate(ltm.created_at)}</dd>
                         <dt>Updated At</dt>
-                        <dd>{ltm.updated_at}</dd>
+                        <dd>{formatDate(ltm.updated_at)}</dd>
                     </dl>
                     <hr />
                     <TransitionForm
