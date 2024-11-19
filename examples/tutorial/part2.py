@@ -1,4 +1,4 @@
-import os
+from datetime import datetime
 
 from openai import OpenAI
 from pydantic import BaseModel
@@ -103,14 +103,17 @@ instructions on how to write:
                 }
             ],
             model="gpt-4o-mini",
+            temperature=0.5,
             response_format=Story,
         )
 
         stories = self.root.state["stories"]
         story = response.choices[0].message.parsed
-        stories.append(story.model_dump())
+        story_data = story.model_dump()
+        story_data["date"] = datetime.now().isoformat()
+        stories.append(story_data)
         self.root.update_state({"stories": stories})
-        self.transition("story_written", payload={"story": story.model_dump()})
+        self.transition("story_written", payload={"story": story_data})
 
 
 class Idle(LTM):
