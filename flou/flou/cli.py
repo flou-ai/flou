@@ -168,8 +168,8 @@ async def transition(
     Transition `ltm_id` LTM by `label` transition and payload (as JSON string)
     """
     from flou.database import get_db
-    from flou.executor import get_executor
-    executor = get_executor()
+    from flou.engine import get_engine
+    engine = get_engine()
     db = get_db()
     ltm = db.load_ltm(ltm_id)
 
@@ -183,7 +183,7 @@ async def transition(
     else:
         payload = None
 
-    executor.transition(ltm, label, params=params, namespace=namespace, payload=payload)
+    engine.transition(ltm, label, params=params, namespace=namespace, payload=payload)
 
     print(
         f"Launched transition [bold]{label}[/bold] for LTM {ltm.name}, id: {ltm.id} with params: {params}, payload: {payload}"
@@ -247,7 +247,7 @@ run_services = {
             "--",
             "celery",
             "-A",
-            "flou.executor.celery.app",
+            "flou.engine.celery.app",
             "worker",
             "--loglevel",
             "info",

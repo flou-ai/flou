@@ -4,7 +4,8 @@ from alembic.config import Config
 from alembic import command
 from sqlalchemy.orm import Session
 
-from flou.database import engine
+from flou.database import engine, get_session, SessionLocal
+from flou.api.main import app
 
 @pytest.fixture(scope='session')
 def alembic_config():
@@ -37,9 +38,19 @@ def session(setup_database):
     """
     connection = engine.connect()
     transaction = connection.begin()
-    session = Session(bind=connection)
+    session = SessionLocal(bind=connection)
+
+    # Override the get_db dependency
+    def override_get_session():
+        try:
+            yield session
+        finally:
+            pass
+
+    app.dependency_overrides[get_session] = override_get_session
 
     yield session
 
+    app.dependency_overrides[get_session] = None
     session.rollback()
     session.close()

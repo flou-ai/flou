@@ -23,10 +23,10 @@ def test_concurrent_self_loop(session):
     root = ConcurrentWithLoopLTM()
     root.start()
 
-    from flou.executor import get_executor
-    executor = get_executor()
-    executor.transition(root, "start_{kwarg}", params=[{'kwarg': '1'}])
-    executor.transition(root, "start_{kwarg}", params=[{'kwarg': '2'}])
+    from flou.engine import get_engine
+    engine = get_engine()
+    engine.transition(root, "start_{kwarg}", params=[{'kwarg': '1'}])
+    engine.transition(root, "start_{kwarg}", params=[{'kwarg': '2'}])
 
     from flou.database import get_db
     db = get_db(session)

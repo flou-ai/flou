@@ -6,10 +6,10 @@ import uuid
 
 import parse
 
-from .exceptions import InvalidTransition
-from .database import get_db
-from .executor import get_executor
-from .utils import to_set, get_fqn
+from flou.exceptions import InvalidTransition
+from flou.database import get_db
+from flou.engine import get_engine
+from flou.utils import to_set, get_fqn
 
 
 class LTMState:
@@ -550,7 +550,7 @@ class LTM(LTMManager, LTMState):
             raise ValueError("Only a new ltm can be started")
 
         self._init_ltms()
-        self.id = get_executor().start(self, payload=payload, playground=playground)
+        self.id = get_engine().start(self, payload=payload, playground=playground)
         return self.id
 
     @property

@@ -14,6 +14,9 @@
         "Flou",
         "websockets"
     ],
+    "cSpell.enabledLanguageIds": [
+        "markdown",
+    ],
     "python.testing.pytestArgs": [
     ],
     "python.testing.cwd": "${workspaceFolder}/tests",

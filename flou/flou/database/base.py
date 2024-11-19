@@ -4,16 +4,16 @@ import importlib
 import sys
 import traceback
 
-import json
 import jsonpatch
 from redis import Redis
-from sqlalchemy import update, func, ARRAY, String, cast, text, literal_column
+from sqlalchemy import update, func, cast, text, literal_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
 
 from . import get_session
-from .models import Error, LTM
 from .utils import json_dumps
 from flou.conf import settings
+from flou.engine.models import Error
+from flou.ltm.models import LTM
 
 
 redis = Redis(host=settings.redis.host, port=settings.redis.port, db=settings.redis.db)
@@ -27,7 +27,7 @@ class BaseDatabase:
     def get_session(self):
         if self.session:
             return self.session
-        return get_session()
+        return next(get_session())
 
     def list_ltms(self, playground=False):
 
@@ -48,7 +48,7 @@ class BaseDatabase:
         return ltms
 
     def create_ltm(self, ltm, payload=None, params=None, playground=False):
-        from flou.executor import get_executor
+        from flou.engine import get_engine
 
         # get the fqn from an instance
         fqn = ltm.get_class_fqn()
@@ -87,7 +87,7 @@ class BaseDatabase:
         ltm._snapshots = [snapshot]
 
         # immediate cause we need this to finish before a sub state can execute
-        get_executor().consume_queues(ltm)
+        get_engine().consume_queues(ltm)
 
         # publish to redis
         redis.publish(
@@ -185,9 +185,9 @@ class BaseDatabase:
         }
         update_query = text(
             f"""
-                            UPDATE ltms SET
+                            UPDATE ltm_ltms SET
                             snapshots = snapshots || :snapshot,
-                            {', '.join([f"{key} = CAST('{value}' AS JSONB) " for i, (key, value) in enumerate(sql_updates.items())])}
+                            {', '.join([f"{key} = CAST(:value{i} AS JSONB) " for i, key in enumerate(sql_updates.keys())])}
                             WHERE id=:ltm_id
                             """
         )
@@ -196,6 +196,7 @@ class BaseDatabase:
             "snapshot": json_dumps(snapshot),
             "ltm_id": ltm_id,
         }
+        values.update({f"value{i}": value for i, value in enumerate(sql_updates.values())})
 
         with self.get_session() as session:
             session.execute(
@@ -326,7 +327,7 @@ class BaseDatabase:
             )
             session.commit()
 
-    def rollback(self, ltm, snapshot_index=None, rollback_index=None, reason="manual"):
+    def rollback(self, ltm, snapshot_index=None, rollback_index=None, replay=False, reason="manual"):
         """
         Rollback the LTM to a previous snapshot.
 
@@ -349,6 +350,10 @@ class BaseDatabase:
         }
 
         if snapshot_index is not None:
+            if replay:
+                snapshot = ltm._snapshots[snapshot_index]
+                snapshot_index -= 1
+
             new_snapshots = ltm._snapshots[: snapshot_index + 1]
             # calculate snapshot until that point
             if snapshot_index == -1:  # if restart
@@ -384,19 +389,17 @@ class BaseDatabase:
 
         # set _initial_state to be used in snapshot calculation
         ltm._initial_state = {}
+
+        from flou.engine import get_engine
+        engine = get_engine()
+
+        if replay:
+            if snapshot_index == -1:
+                engine.start(ltm, **snapshot["item"])
+            else:
+                engine.transition(ltm, **snapshot["item"])
+
         return ltm
-
-    def replay(self, ltm, snapshot_index):
-        snapshot = ltm._snapshots[snapshot_index]
-        ltm = self.rollback(ltm, snapshot_index - 1, reason="replay")
-        from flou.executor import get_executor
-
-        executor = get_executor()
-        # special case for restart
-        if snapshot_index == 0:
-            executor.start(ltm, **snapshot["item"])
-        else:
-            executor.transition(ltm, **snapshot["item"])
 
     def _atomic_append(self, ltm_id, path, value):
         path_last_element = path + ["-1"]

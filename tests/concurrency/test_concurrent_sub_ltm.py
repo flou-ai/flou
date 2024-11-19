@@ -32,10 +32,10 @@ def test_concurrent_sub_ltm(session):
 
     db = get_db(session)
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
@@ -112,10 +112,10 @@ def test_multiple_concurrent_sub_ltm(session):
 
     db = get_db(session)
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
@@ -183,13 +183,13 @@ def test_multiple_concurrent_sub_nested_ltm(session):
 
     db = get_db(session)
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
-    executor.transition(
+    engine.transition(
         doneLTM,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],
@@ -197,7 +197,7 @@ def test_multiple_concurrent_sub_nested_ltm(session):
     )
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
-    executor.transition(
+    engine.transition(
         doneLTM,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],
@@ -243,19 +243,19 @@ def test_concurrent_instances_as_json(session):
     from flou.database import get_db
 
     db = get_db(session)
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
-    executor.transition(
+    engine.transition(
         root,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],
         namespace="concurrent_sub_nested_root.concurrent_sub_nested_1",
     )
 
-    executor.transition(
+    engine.transition(
         root,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],

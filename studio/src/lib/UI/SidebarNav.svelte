@@ -43,7 +43,13 @@
 	.selected,
 	.nav:hover {
 		border-radius: var(--8, 0.5rem);
+	}
+	.nav:hover {
 		background: var(--primary-light, #f7f9fb);
+
+	}
+	.selected {
+		background: var(--primary-purple-50, #f7f9fb);
 	}
 	.disabled {
 		opacity: 0.5;

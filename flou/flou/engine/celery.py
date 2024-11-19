@@ -7,9 +7,9 @@ import uuid
 from celery import Celery
 
 from flou.database import get_db, get_db
-from flou.conf import settings, Executor
+from flou.conf import settings, Engine
 from flou.ltm import LTM
-from .base import BaseExecutor
+from .base import BaseEngine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,10 +21,10 @@ app = Celery("flou")
 
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
-app.config_from_object(settings.executor)
+app.config_from_object(settings.engine)
 
 # Load task modules from celery
-app.autodiscover_tasks(["flou.executor.celery"], force=True)
+app.autodiscover_tasks(["flou.engine.celery"], force=True)
 
 
 @app.task(bind=True, ignore_result=True)
@@ -35,16 +35,16 @@ def debug_task(self):
 @app.task(
     name="execute",
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": settings.executor.max_retries},
+    retry_kwargs={"max_retries": settings.engine.max_retries},
     retry_backoff=True,
 )
 def execute(ltm_id, item_id, fqn, payload=None):
     logger.info(f">>> execute: {ltm_id} {fqn}, payload: {payload}")
 
     try:
-        from flou.executor import get_executor
+        from flou.engine import get_engine
 
-        executor = get_executor()
+        engine = get_engine()
         db = get_db()
         root = db.load_ltm(ltm_id)
         ltm = root._get_ltm(fqn)
@@ -62,7 +62,7 @@ def execute(ltm_id, item_id, fqn, payload=None):
             item={"item_id": item_id, "fqn": ltm.fqn, "payload": payload},
         )
 
-        executor.consume_queues(ltm)
+        engine.consume_queues(ltm)
     except Exception as e:
         get_db().log_retry(
             item_id, ltm_id, "execute", {"fqn": fqn, "payload": payload}, e
@@ -75,7 +75,7 @@ def execute(ltm_id, item_id, fqn, payload=None):
 @app.task(
     name="transition",
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": settings.executor.max_retries},
+    retry_kwargs={"max_retries": settings.engine.max_retries},
     retry_backoff=True,
 )
 def transition(ltm_id, item_id, label, params=None, namespace=None, payload=None):
@@ -83,9 +83,9 @@ def transition(ltm_id, item_id, label, params=None, namespace=None, payload=None
         f">>> transition: {ltm_id}, label: {label},  params: {params}, namespace: {namespace}, payload: {payload}"
     )
     try:
-        from flou.executor import get_executor
+        from flou.engine import get_engine
 
-        executor = get_executor()
+        engine = get_engine()
         db = get_db()
         ltm = db.load_ltm(ltm_id)
 
@@ -107,7 +107,7 @@ def transition(ltm_id, item_id, label, params=None, namespace=None, payload=None
             },
         )
 
-        executor.consume_queues(ltm)
+        engine.consume_queues(ltm)
     except Exception as e:
         get_db().log_retry(
             item_id,
@@ -136,7 +136,7 @@ def error_handler(request, exc, traceback):
     get_db().set_stop_retrying(request.kwargs["item_id"])
 
 
-class CeleryExecutor(BaseExecutor):
+class CeleryEngine(BaseEngine):
     def execute(self, ltm, fqn, payload=None, item_id=None):
         if isinstance(ltm, LTM):
             ltm_id = ltm.root.id

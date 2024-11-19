@@ -1,16 +1,17 @@
 import pytest
 from flou.database import get_db
-from flou.conf import Executor
 from fastapi.testclient import TestClient
 from flou.api.main import app
-from flou.conf import Database
 from flou.registry import registry
+from .test_ltm import PayloadLTM
+from flou.experiments.models import Experiment, Trial
 
 client = TestClient(app)
 
 
 def test_list(session):
     from .test_ltm import PayloadLTM
+
     ltm = PayloadLTM()
     id = ltm.start()
 
@@ -22,19 +23,21 @@ def test_list(session):
 
     # check that we have the original one but not the copy
     assert response.status_code == 200
-    assert id in [ltm['id'] for ltm in response.json()]
-    assert copy_id not in [ltm['id'] for ltm in response.json()]
+    assert id in [ltm["id"] for ltm in response.json()]
+    assert copy_id not in [ltm["id"] for ltm in response.json()]
 
     response = client.get("/api/v0/ltm?playground=true")
 
     # check that we have the copy but not the original one
     assert response.status_code == 200
-    assert id not in [ltm['id'] for ltm in response.json()]
-    assert copy_id in [ltm['id'] for ltm in response.json()]
+    assert id not in [ltm["id"] for ltm in response.json()]
+    assert copy_id in [ltm["id"] for ltm in response.json()]
+
 
 def test_register(session):
 
     from tests.test_ltm import Root
+
     registry._registry = []
     registry.register(Root)
 
@@ -52,22 +55,25 @@ def test_create_ltm(session):
     response = client.post("/api/v0/ltm", json=ltm_creation_data)
     assert response.status_code == 200
 
-    id = response.json()['id']
+    id = response.json()["id"]
     from flou.database import get_db
+
     db = get_db(session)
     assert db.load_ltm(id).id == id
 
 
 def test_copy_ltm(session):
     from .test_ltm import PayloadLTM
+
     ltm = PayloadLTM()
     id = ltm.start()
 
     response = client.post(f"/api/v0/ltm/{id}/copy")
     assert response.status_code == 200
 
-    copy_id = response.json()['copy_id']
+    copy_id = response.json()["copy_id"]
     from flou.database import get_db
+
     db = get_db(session)
     copy = db.load_ltm(copy_id, playground=True)
     assert copy._source_id == id
@@ -75,19 +81,21 @@ def test_copy_ltm(session):
 
 def test_transition(session):
     from .test_ltm import PayloadLTM
+
     ltm = PayloadLTM()
     id = ltm.start()
 
     transition_data = {
         "transition": "go",
         "namespace": "payload",
-        "payload": {"some": "data"}
+        "payload": {"some": "data"},
     }
     response = client.post(f"/api/v0/ltm/{ltm.id}/transition", json=transition_data)
     assert response.status_code == 200
 
     assert response.json() == True
     from flou.database import get_db
+
     db = get_db(session)
     loaded_ltm = db.load_ltm(id)
     assert loaded_ltm._get_ltm("payload.payload_state").state["some"] == "data"
@@ -95,21 +103,26 @@ def test_transition(session):
 
 def test_rollback(session):
     from .test_ltm import PayloadLTM
+
     ltm = PayloadLTM()
     id = ltm.start()
 
-    from flou.executor import get_executor
-    executor = get_executor()
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    from flou.engine import get_engine
+
+    engine = get_engine()
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
 
     rollback_data = {
-        "index": 2,
+        "snapshot": {
+            "index": 2,
+        },
     }
     response = client.post(f"/api/v0/ltm/{ltm.id}/rollback", json=rollback_data)
     assert response.status_code == 200
-    assert response.json() == True
+    assert response.json() == {"success": True}
 
     from flou.database import get_db
+
     db = get_db(session)
     loaded_ltm = db.load_ltm(id, snapshots=True, rollbacks=True)
     assert len(loaded_ltm._snapshots) == 3
@@ -118,22 +131,209 @@ def test_rollback(session):
 
 def test_replay(session):
     from .test_ltm import PayloadLTM
+
     ltm = PayloadLTM()
     id = ltm.start()
 
-    from flou.executor import get_executor
-    executor = get_executor()
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    from flou.engine import get_engine
+
+    engine = get_engine()
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
 
     replay_data = {
-        "index": 3,
+        "snapshot": {
+            "index": 3,
+            "replay": True,
+        },
     }
-    response = client.post(f"/api/v0/ltm/{ltm.id}/replay", json=replay_data)
+    response = client.post(f"/api/v0/ltm/{ltm.id}/rollback", json=replay_data)
     assert response.status_code == 200
-    assert response.json() == True
+    assert response.json() == {"success": True}
 
     from flou.database import get_db
+
     db = get_db(session)
     loaded_ltm = db.load_ltm(id, snapshots=True, rollbacks=True)
     assert len(loaded_ltm._snapshots) == 5
     assert len(loaded_ltm._rollbacks) == 1
+
+
+def test_list_experiments(session):
+    experiment1 = Experiment(name="Experiment 1", description="First experiment")
+    experiment2 = Experiment(name="Experiment 2", description="Second experiment")
+    session.add(experiment1)
+    session.add(experiment2)
+    session.commit()
+
+    response = client.get("/api/v0/experiments")
+    assert response.status_code == 200
+    experiments = response.json()
+    assert isinstance(experiments, list)
+    assert len(experiments) >= 2
+    assert any(exp["name"] == "Experiment 1" for exp in experiments)
+    assert any(exp["name"] == "Experiment 2" for exp in experiments)
+
+
+def test_create_experiment(session):
+    experiment_creation_data = {
+        "name": "New Experiment",
+        "description": "A test experiment",
+        "trial": {
+            "name": "Initial Trial",
+            "fqn": "tests.test_ltm.Root",
+        },
+    }
+
+    response = client.post("/api/v0/experiments", json=experiment_creation_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"]
+
+
+def test_rollback_trial(session):
+    # Create experiment and get initial trial
+    from .test_ltm import PayloadLTM
+
+    ltm = PayloadLTM()
+    ltm.start()
+    trial = Trial(
+        name="Initial Trial", ltm_id=ltm.id, rollback_index=0, snapshot_index=0
+    )
+    experiment = Experiment(
+        name="Test Experiment", description="Test experiment for rollback"
+    )
+    experiment.trials.append(trial)
+    session.add(experiment)
+    session.flush()
+
+    from flou.engine import get_engine
+
+    engine = get_engine()
+    engine.transition(ltm, "go", payload={"some": "data"})
+
+    # Perform rollback
+    rollback_data = {
+        "snapshot": {
+            "index": 2,
+        },
+        "new_trial": {
+            "name": "New Trial 2",
+            "previous_trial_outputs": {},
+            "inputs": {},
+        },
+    }
+    response = client.post(f"/api/v0/ltm/{ltm.id}/rollback", json=rollback_data)
+    print(response.json())
+    assert response.status_code == 200
+
+    # Verify trials state
+    trials = (
+        session.query(Trial)
+        .filter(Trial.experiment_id == experiment.id)
+        .order_by(Trial.created_at)
+        .all()
+    )
+    assert len(trials) == 2
+
+    assert trials[0].outputs == rollback_data["new_trial"]["previous_trial_outputs"]
+    assert trials[0].rollback_index == 0
+
+    # Check new trial properties
+    assert trials[1].ltm_id == ltm.id
+    assert trials[1].experiment_id == trial.experiment_id
+    assert trials[1].name == rollback_data["new_trial"]["name"]
+    assert trials[1].rollback_index == 1
+    assert trials[1].snapshot_index == 2
+
+
+def test_create_trial(session):
+    # First create an experiment
+    experiment = Experiment(name="Test Experiment", description="Test experiment")
+    session.add(experiment)
+    session.commit()
+
+    # Create trial data
+    trial_creation_data = {
+        "name": "New Trial",
+        "fqn": "tests.test_ltm.Root",
+    }
+
+    response = client.post(
+        f"/api/v0/experiments/{experiment.id}/trials", json=trial_creation_data
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "id" in data
+
+    # Verify trial was created correctly
+    trials = session.query(Trial).filter(Trial.experiment_id == experiment.id).all()
+    assert len(trials) == 1
+    assert trials[0].name == "New Trial"
+    assert trials[0].ltm_id == data["id"]
+
+
+def test_recover_rollback(session):
+    # Create experiment and initial trial
+    from .test_ltm import PayloadLTM
+
+    ltm = PayloadLTM()
+    ltm.start()
+    trial = Trial(
+        name="Initial Trial", ltm_id=ltm.id, rollback_index=0, snapshot_index=0
+    )
+    experiment = Experiment(
+        name="Test Experiment", description="Test experiment for rollback recovery"
+    )
+    experiment.trials.append(trial)
+    session.add(experiment)
+    session.flush()
+
+    # Make transitions and rollbacks
+    from flou.engine import get_engine
+
+    engine = get_engine()
+    db = get_db()
+
+    # First transition
+    engine.transition(ltm, "go", payload={"some": "data"})
+
+    # First rollback using database directly
+    ltm_with_snapshots = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
+    db.rollback(ltm_with_snapshots, snapshot_index=2)
+
+    # Second transition
+    engine.transition(ltm, "go", payload={"other": "data"})
+
+    # Recover first rollback using API
+    recover_data = {
+        "rollback": {
+            "index": 0,
+        },
+        "new_trial": {
+            "name": "Recovery Trial",
+            "previous_trial_outputs": {},
+            "inputs": {},
+        },
+    }
+    response = client.post(f"/api/v0/ltm/{ltm.id}/rollback", json=recover_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] == True
+    assert "trial" in data
+
+    # Verify trials state
+    trials = (
+        session.query(Trial)
+        .filter(Trial.experiment_id == experiment.id)
+        .order_by(Trial.created_at)
+        .all()
+    )
+    assert len(trials) == 2
+
+    # Check recovery trial properties
+    recovery_trial = trials[-1]
+    assert recovery_trial.ltm_id == ltm.id
+    assert recovery_trial.experiment_id == trial.experiment_id
+    assert recovery_trial.name == "Recovery Trial"
+    assert recovery_trial.rollback_index == 2  # Third rollback (including the recovery)
+    assert recovery_trial.snapshot_index == 0  # Rollback recovery uses index 0

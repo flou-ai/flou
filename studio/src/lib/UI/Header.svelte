@@ -1,22 +1,24 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { routes } from '$lib/routes';
+	import { getCurrentRoute } from '$lib/routes';
 	import ToggleDarkMode from '$lib/UI/ToggleDarkMode.svelte';
-	import { Sidebar } from 'phosphor-svelte';
 
-	let title: string|undefined = undefined;
+	let name: string|undefined = undefined;
+	let icon: any = undefined;
 
 	$: {
-		const currentPath = $page.url.pathname;
-		const matchingRoute = routes.find((route: any) => currentPath.startsWith(route.path));
-		title = matchingRoute?.name;
+		$page;
+		const route = getCurrentRoute();
+		if (route) {
+			({ name, icon } = route);
+		}
 	}
 </script>
 
 <div class="header">
 	<div class="left">
-		<Sidebar size="1.5rem" />
-		{title}
+		<svelte:component this={icon} size="1.5rem" />
+		{name}
 	</div>
 	<div class="right">
 		<ToggleDarkMode />

@@ -33,11 +33,11 @@ def test_namespaces(session):
     root = Root()
     root.start()
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(root, "start", namespace="global")
+    engine.transition(root, "start", namespace="global")
 
     from flou.database import get_db
 

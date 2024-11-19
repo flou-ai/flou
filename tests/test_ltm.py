@@ -3,10 +3,10 @@ from copy import deepcopy
 import pytest
 
 from flou.database import get_db
-from flou.executor import get_executor
-from flou.conf import Executor
+from flou.engine import get_engine
+from flou.conf import Engine
 from flou.ltm import LTM
-from .utils import patch_settings, convert_lists_to_sets
+from .utils import convert_lists_to_sets, patch_settings
 
 
 class Child(LTM):
@@ -25,7 +25,7 @@ class Root(LTM):
 @pytest.mark.parametrize(
     "patch_settings",
     [
-        {"executor": Executor(engine="flou.executor.dummy.DummyExecutor")},
+        {"engine": Engine(engine="flou.engine.dummy.DummyEngine")},
     ],
     indirect=True,
 )
@@ -260,12 +260,12 @@ def test_payload():
     ltm = PayloadLTM()
     ltm.start()
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
     assert ltm.state["payload_state"]["some_kwarg"] == True
 
-    executor.transition(ltm, "go", payload={"other_kwarg": False})
+    engine.transition(ltm, "go", payload={"other_kwarg": False})
 
     assert ltm.state["payload_state"]["other_kwarg"] == False
 
@@ -275,12 +275,12 @@ def test_rollback(session):
     ltm.start()
     init_state = deepcopy(ltm._state)
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
     middle_state = deepcopy(ltm._state)
 
-    executor.transition(ltm, "go", payload={"other_kwarg": False})
+    engine.transition(ltm, "go", payload={"other_kwarg": False})
 
 
     db = get_db(session)
@@ -323,14 +323,14 @@ def test_recover_rollback(session):
     ltm.start()
     init_state = deepcopy(ltm._state)
 
-    executor = get_executor()
+    engine = get_engine()
 
     # execute "go"
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
     middle_state = deepcopy(ltm._state)
 
     # execute "go" again
-    executor.transition(ltm, "go", payload={"other_kwarg": False})
+    engine.transition(ltm, "go", payload={"other_kwarg": False})
 
 
     db = get_db(session)
@@ -357,16 +357,16 @@ def test_replay(session):
     ltm = PayloadLTM()
     ltm.start()
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
     middle_state = deepcopy(ltm._state)
 
 
     db = get_db()
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
-    db.replay(ltm_final, 3)
+    db.rollback(ltm_final, 3, replay=True)
 
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
@@ -379,7 +379,7 @@ def test_restart(session):
 
 
     db = get_db()
-    executor = get_executor()
+    engine = get_engine()
 
     ltm = PayloadLTM()
     ltm.start()
@@ -387,12 +387,12 @@ def test_restart(session):
     ltm_initial = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
     initial_state = deepcopy(ltm_initial._state)
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
 
     db = get_db()
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
-    db.replay(ltm_final, 0)
+    db.rollback(ltm_final, 0, replay=True)
 
     ltm_restart = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
@@ -427,8 +427,8 @@ def test_store_none_transition(session):
     root = RootWithNone()
     root.start()
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(root, "go")
+    engine.transition(root, "go")
 
     assert root.state["test"] == None
