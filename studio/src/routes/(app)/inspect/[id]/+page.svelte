@@ -17,7 +17,7 @@
 
 	$: ({ ltm, rollback, experiment, params } = data);
 
-	const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.params.id}?rollbacks=True`;
+	const ltmUrl = `${PUBLIC_API_BASE_URL}ltm/${data.params.id}`;
 
 	onMount(async () => {
 		snapshotIndex = ltm.snapshots.length - 1;
