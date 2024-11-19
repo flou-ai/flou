@@ -1,8 +1,19 @@
 import os
 
+from openai import OpenAI
+from pydantic import BaseModel
+
 from flou.ltm import LTM
 
-from openai import OpenAI
+
+class Story(BaseModel):
+    content: str
+    title: str
+    summary: str
+
+
+class WritingInstructions(BaseModel):
+    writing_instructions: str
 
 
 class LLM:
@@ -11,12 +22,12 @@ class LLM:
         self.client = OpenAI()
 
 
-class WaitingForSettings(LTM):
-    name = "waiting_for_settings"
+class WaitingForInstructions(LTM):
+    name = "waiting_for_instructions"
 
 
-class UpdatingSettings(LLM, LTM):
-    name = "update_settings"
+class UpdatingInstructions(LLM, LTM):
+    name = "update_instructions"
 
     def run(self, payload):
         """
@@ -25,13 +36,17 @@ class UpdatingSettings(LLM, LTM):
         Your editor, the father of your readers next story is giving you
         requirements on how to write
 
-        Update the previous settings with the new information.
+        Your task is to update the previous writing instructions with the new
+        information given. Do not invent any new information just merge the input
+        with the previous instructions.
+
+        Previous writing instructions: ""
         """
 
-        previous_settings = self.parent.state["settings"]
-        new_settings = payload["settings"]
+        previous_instructions = self.root.state["writing_instructions"]
+        new_instructions = payload["writing_instructions"]
 
-        update_settings = self.client.chat.completions.create(
+        update_instructions = self.client.beta.chat.completions.parse(
             messages=[
                 {
                     "role": "system",
@@ -41,42 +56,61 @@ You are a children bedtime stories best seller author.
 Your editor, the father of your readers next story is giving you
 requirements on how to write.
 
-Merge the previous settings with the new information.
+Merge the previous writing instructions with the new information.
 
-Previous settings:
-{previous_settings}
+Previous instructions:
+{previous_instructions}
+""",
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+New writing instructions:
+{new_instructions}
 
-New settings:
-{new_settings}
+Now update the instructions with the new information.
 """,
                 }
             ],
             model="gpt-4o-mini",
+            response_format=WritingInstructions,
         )
-        self.parent.update_state(
-            {"settings": update_settings.choices[0].message.content}
+        self.root.update_state(
+            {"writing_instructions": update_instructions.choices[0].message.parsed.writing_instructions}
         )
-        self.transition("settings_updated")
+        self.transition("instructions_updated")
 
 
 class WritingStory(LLM, LTM):
     name = "writing_story"
 
     def run(self, payload=None):
-        story = self.client.chat.completions.create(
+        response = self.client.beta.chat.completions.parse(
             messages=[
                 {
+                    "role": "system",
+                    "content": f"""
+You are a children bedtime stories best seller author.
+
+Your editor, the father of your readers next story has the following
+instructions on how to write:
+{self.root.state["writing_instructions"]}
+""",
+                },
+                {
                     "role": "user",
-                    "content": "Write a bedtime story for my children.",
+                    "content": "Write a bedtime story.",
                 }
             ],
             model="gpt-4o-mini",
+            response_format=Story,
         )
 
-        stories = self.parent.state["stories"]
-        stories.append(story.choices[0].message.content)
-        self.parent.update_state({"stories": stories})
-        self.transition("story_written")
+        stories = self.root.state["stories"]
+        story = response.choices[0].message.parsed
+        stories.append(story.model_dump())
+        self.root.update_state({"stories": stories})
+        self.transition("story_written", payload={"story": story.model_dump()})
 
 
 class Idle(LTM):
@@ -85,22 +119,22 @@ class Idle(LTM):
 
 class BedtimeStoryWriter(LTM):
     name = "bedtime_story_writer_2"
-    init = [WaitingForSettings]
+    init = [WaitingForInstructions]
 
     transitions = [
         {
-            "from": WaitingForSettings,
-            "label": "update_settings",
-            "to": UpdatingSettings,
+            "from": WaitingForInstructions,
+            "label": "update_instructions",
+            "to": UpdatingInstructions,
         },
-        {"from": UpdatingSettings, "label": "settings_updated", "to": Idle},
+        {"from": UpdatingInstructions, "label": "instructions_updated", "to": Idle},
         {"from": Idle, "label": "write_story", "to": WritingStory},
         {"from": WritingStory, "label": "story_written", "to": Idle},
-        {"from": Idle, "label": "update_settings", "to": UpdatingSettings},
+        {"from": Idle, "label": "update_instructions", "to": UpdatingInstructions},
     ]
 
     def get_initial_state(self):
         return {
-            "settings": "",
+            "writing_instructions": "",
             "stories": [],
         }

@@ -141,7 +141,7 @@ async def transition(
     )
 
     # wait until another transition is completed
-    .storieiif transition.wait_until_transition:
+    if transition.wait_until_transition:
         wait_namespace, wait_label = transition.wait_until_transition.split(":")
         try:
             async with redis.pubsub() as pubsub:
