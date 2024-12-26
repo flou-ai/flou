@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flou"
-version = "0.2.0-dev.0"
+version = "0.3.0.dev3"
 description = "The framework for LLM-powered apps"
 authors = [
     { name = "Iván Raskovsky", email = "raskovsky+flou@gmail.com" }

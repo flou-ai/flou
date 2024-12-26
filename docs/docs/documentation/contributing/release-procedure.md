@@ -21,15 +21,26 @@ Flou follows [Semantic Versioning](https://semver.org/) (SemVer) versioning.
 
 You can find the current version in the `pyproject.toml` file.
 
-Flou will be released in `stable` and `dev`. Every release with a `-dev.X`
+Flou will be released in `stable` and `dev`. Every release with a `.devX`
 suffix means it's in active development and should not be used except to try
 experimental features. Before releasing a `stable` release, remove the `dev`
 suffix, publish the changes and then advance the minor or patch version and add
 the `dev` suffix again.
 
-## Updating the docker images
+## Releasing a new version
 
-        % export FLOU_VERSION=0.1.0-dev.1
+You can release a new version by running:
+
+        % flou release --push --pypi
+
+This will take care of updating the version, building the docker images, pushing
+them to the registry and publishing the python package to PyPI.
+
+## Manually releasing a new version
+
+### Updating the docker images
+
+        % export FLOU_VERSION=0.1.0.dev1
         % docker compose -f compose.yml -f compose.dev.yml build
 
         % docker tag flou-engine:latest flouai/flou:latest
@@ -46,7 +57,7 @@ the `dev` suffix again.
         % docker push flouai/studio:$FLOU_VERSION
         % docker push flouai/docs:$FLOU_VERSION
 
-## Updating the python package in PyPI
+### Updating the python package in PyPI
 
 Make sure you have your PyPI credentials set in `~/.pypirc`.
 

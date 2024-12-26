@@ -4,6 +4,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import re
 from dotenv import dotenv_values
 from importlib import resources
 from typing import List
@@ -18,6 +19,16 @@ from rich.table import Table
 sys.path.append(os.getcwd())
 
 import flou
+
+
+def get_version_from_pyproject():
+    """Read version from pyproject.toml"""
+    import tomli
+
+    pyproject_path = pathlib.Path(__file__).parent.parent / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
+        pyproject = tomli.load(f)
+    return pyproject["project"]["version"]
 
 
 app = typer.Typer()
@@ -47,6 +58,10 @@ def run_docker(command: List[str]):
 
     env = os.environ.copy()
     env["RESOURCES_DIR"] = resources_dir
+
+    version = flou.__version__
+    docker_tag = version.replace("+", "-")  # docker doesn't support + in tags
+    env['REGISTRY_TAG'] = docker_tag  # use this tag for compose
 
     # Execute the docker compose command
     subprocess.run(cmd, env=env)
@@ -289,3 +304,74 @@ def run(
     # Execute the docker compose command
     typer.echo(f"Running command: {' '.join(command)}")
     subprocess.run(command, env=env)
+
+
+@app.command()
+def release(
+    push: bool = typer.Option(False, "--push", help="Push images to registry"),
+    tag: str = typer.Option(None, "--tag", help="Override the version tag (default: from pyproject.toml)"),
+    pypi: bool = typer.Option(False, "--pypi", help="Also release to PyPI"),
+):
+    """
+    Build and optionally push Docker images for Flou.
+    Uses the version from pyproject.toml for tagging unless overridden with --tag.
+    If --pypi is specified, also builds and uploads the package to PyPI.
+    """
+    # Get version from pyproject.toml or override
+    version = tag if tag else get_version_from_pyproject()
+    tags = [version.replace("+", "-")]
+
+    # Build the images
+    print(f"Building Docker images for version {tags[0]}...")
+    run_docker(["-f", "compose.dev.yml", "build"])
+
+    # Check for any letter or + in the version
+    if not re.search(r'[a-zA-Z+]', tags[0]):
+        tags.append("latest")
+
+    commands = [
+        ["tag", "flou-engine:latest", "flouai/flou:{version}"],
+        ["tag", "flou-studio:latest", "flouai/studio:{version}"],
+        ["tag", "flou-docs:latest", "flouai/docs:{version}"],
+    ]
+
+    for tag in tags:
+        for cmd in commands:
+            # add the tag to the version
+            with_version = cmd.copy()
+            with_version[2] = with_version[2].format(version=tag)
+            subprocess.run(["docker"] + with_version, check=True)
+            print(f"Tagged {with_version[1]} as {with_version[2]}")
+
+    if push:
+        print("\nPushing images to registry...")
+        push_commands = [
+            ["push", "flouai/flou:{version}"],
+            ["push", "flouai/studio:{version}"],
+            ["push", "flouai/docs:{version}"],
+        ]
+
+        for tag in tags:
+            for cmd in push_commands:
+                with_version = cmd.copy()
+                with_version[1] = with_version[1].format(version=tag)
+                subprocess.run(["docker"] + with_version, check=True)
+                print(f"Pushed {with_version[1]}")
+
+    if pypi:
+        print("\nBuilding and releasing to PyPI...")
+        # Clean previous builds
+        subprocess.run(["rm", "-rf", "dist/", "build/"], check=True)
+        # Build the package
+        subprocess.run(["python3", "-m", "build"], check=True)
+        # Upload to PyPI
+        subprocess.run(["python3", "-m", "twine", "upload", "dist/*"], check=True)
+        print("PyPI release completed!")
+
+    print(f"\nRelease {tags[0]} completed successfully!")
+
+    if not push:
+        print("\nNote: Images were built and tagged but not pushed. Use --push to push to registry.")
+    if not pypi:
+        print("Note: Package was not released to PyPI. Use --pypi to release to PyPI.")
+
