@@ -11,6 +11,9 @@
 		const route = getCurrentRoute();
 		if (route) {
 			({ name, icon } = route);
+		} else {
+			name = 'Flou Studio';
+			icon = null;
 		}
 	}
 </script>

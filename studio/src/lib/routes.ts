@@ -23,7 +23,7 @@ export const routes = [
     { name: 'State Machines', path: '/state-machines', icon: TreeStructure, disabled: true },
     { name: 'Performance', path: '/performance', icon: ChartLineUp, disabled: true },
     { name: 'Analyze', path: '/analyze', icon: Function, disabled: true },
-    { name: 'Datasets', path: '/datasets', icon: Database, disabled: true },
+    { name: 'Datasets', path: '/datasets', icon: Database },
     { name: 'Community', title: true },
     { name: 'Patterns Hub', path: '/patterns-hub', icon: BracketsAngle, disabled: true },
     { name: 'Learn', title: true },

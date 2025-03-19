@@ -92,10 +92,11 @@ async def get_ltm(
         "concurrent_instances": ltm.concurrent_instances_as_json(),
         "created_at": ltm.created_at,
         "updated_at": ltm.updated_at,
+        "ui_schema": ltm.get_ui_schema(),
     }
     if rollbacks:
         data["rollbacks"] = ltm._rollbacks
-
+        
     # gather the errors
     data["errors"] = session.scalars(select(Error).where(Error.ltm_id == ltm_id)).all()
 
@@ -104,8 +105,21 @@ async def get_ltm(
     if current_trial:
         data["experiment_id"] = current_trial.experiment_id
         data["current_trial"] = current_trial
-
+        
     return data
+
+
+@router.get("/ltm/{ltm_id}/ui")
+async def get_ltm_ui_schema(
+    ltm_id: int = Path(..., description="The LTM instance id"),
+    session=Depends(get_session),
+):
+    """
+    Get the UI schema for an LTM instance
+    """
+    db = get_db()
+    ltm = db.load_ltm(ltm_id)
+    return ltm.get_ui_schema()
 
 
 @router.post("/ltm/{ltm_id}/copy")

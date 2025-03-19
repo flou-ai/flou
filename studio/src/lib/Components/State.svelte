@@ -4,9 +4,11 @@
 	import SnapshotItem from './SnapshotItem.svelte';
 	import Tabs from '../UI/Tabs.svelte';
 	import Tab from '../UI/Tab.svelte';
+	import LTMWidgets from './LTMWidgets.svelte';
 
 	export let fullSnapshot: any = {};
 	export let currentSnapshot: any = {};
+	export let ltmId: string = '';
 </script>
 
 <h3><Camera size="1.25rem" />State</h3>
@@ -32,6 +34,9 @@
 {/if}
 
 <Tabs>
+	<Tab title="Custom UI">
+    <LTMWidgets {ltmId} state={fullSnapshot.state} />
+  </Tab>
 	<Tab title="Raw Store Diff">
 		<JsonView json={currentSnapshot?.patch} />
 	</Tab>

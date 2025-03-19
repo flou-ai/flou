@@ -26,9 +26,8 @@
 	};
 </script>
 
-<h2>Experiments</h2>
 <div class="table-header">
-	<h3> </h3>
+	<h2>Experiments</h2>
 	<div class="table-controls">
 		<a href="/experiments/new">
 			<Plus size="1rem" /> New Experiment

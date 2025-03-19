@@ -559,3 +559,23 @@ class LTM(LTMManager, LTMState):
             return self.parent.root
         else:
             return self
+            
+    def get_ui_widgets(self):
+        """
+        Define UI widgets for this LTM. Override this method in subclasses.
+        
+        Returns:
+            List of UI widgets to display in the Studio UI
+        """
+        return []  # Default implementation returns empty list
+    
+    def get_ui_schema(self):
+        """
+        Get UI schema for rendering in the Studio.
+        
+        This converts the widget classes to a dictionary format
+        that can be serialized to JSON and sent to the frontend.
+        """
+        return {
+            "widgets": [widget.to_dict() for widget in self.get_ui_widgets()]
+        }

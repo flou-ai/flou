@@ -132,7 +132,7 @@
 		</div>
 		<div id="snapshot">
 			<Block>
-				<State fullSnapshot={snapshot} {currentSnapshot} />
+				<State fullSnapshot={snapshot} {currentSnapshot} ltmId={params.id} />
 			</Block>
 		</div>
 		<div id="graph">
