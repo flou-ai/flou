@@ -186,6 +186,47 @@ chatbot.transition(`message_received`, payload={'message': "A message"})
 Payloads are great for data that is strictly related to a single transition
 since they aren't stored in a permanent fashion.
 
+### Transition Payload Schemas (Experimental)
+
+!!! experimental "This feature is experimental and subject to change"
+
+You can define JSON schemas for transition payloads using Pydantic models. This allows for:
+
+1. Validation of payload data
+2. Automatic form generation in the Studio UI
+3. Type hints and documentation
+
+To define payload schemas, add a `transition_payloads` dictionary to your LTM class that maps
+transition labels to Pydantic models:
+
+```python
+from pydantic import BaseModel, Field
+
+class WritingInstructions(BaseModel):
+    writing_instructions: str = Field(..., description="Instructions for writing")
+
+class MyStateMachine(LTM):
+    name = "my_state_machine"
+    init = [WaitingState]
+    
+    transitions = [
+        {
+            "from": WaitingState,
+            "label": "update_instructions",
+            "to": ProcessingState
+        },
+        # Other transitions...
+    ]
+    
+    # Define payload schemas
+    transition_payloads = {
+        "update_instructions": WritingInstructions
+    }
+```
+
+When these transitions are displayed in the Studio UI, a form will be generated based on the 
+Pydantic model's fields, with appropriate input types and validation.
+
 ## Store Management
 
 Flou provides a **data store** out-of-the-box. Each State Machine has a store
