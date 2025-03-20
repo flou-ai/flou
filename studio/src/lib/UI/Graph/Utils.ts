@@ -101,6 +101,7 @@ export let ltmToGraph = (_ltm: any | null = null, parentFQN: string | null = nul
                 label: edge.label,
                 namespace: edge.namespace,
                 displayLabel: edge.display_label,
+                payload_schema: edge.payload_schema,
             }
             elements.push({ data });
         }

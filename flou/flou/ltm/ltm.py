@@ -375,6 +375,11 @@ class LTMManager:
                         else:
                             transition_structure["namespace"] = structure["fqn"]
                             transition_structure["display_label"] = transition["label"]
+                            
+                        # Include payload schema if defined for this transition label
+                        if self.transition_payloads and transition["label"] in self.transition_payloads:
+                            payload_model = self.transition_payloads[transition["label"]]
+                            transition_structure["payload_schema"] = payload_model.model_json_schema()
                         structure["transitions"].append(transition_structure)
 
         return structure
@@ -469,6 +474,7 @@ class LTM(LTMManager, LTMState):
     name = None
     init = None
     transitions = None
+    transition_payloads = None  # Map of transition labels to payload schema models
 
     parent = None  # only the root ltm doesn't have parents
     _sub_ltms = None

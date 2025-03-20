@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import pytest
+from pydantic import BaseModel
 
 from flou.database import get_db
 from flou.engine import get_engine
@@ -144,6 +145,20 @@ def test_structure(session):
             ],
         }
     )
+    
+    # Test payload schema
+    ltm = PayloadLTM()
+    structure = ltm.as_json()
+    
+    assert "transitions" in structure
+    assert len(structure["transitions"]) == 1
+    assert "payload_schema" in structure["transitions"][0]
+    
+    schema = structure["transitions"][0]["payload_schema"]
+    assert schema["title"] == "PayloadModel"
+    assert "properties" in schema
+    assert "some_kwarg" in schema["properties"]
+    assert "other_kwarg" in schema["properties"]
     ltm = NestedLTM()
     ltm.start()
     structure = ltm.as_json()
@@ -242,6 +257,11 @@ def test_snapshots_queues(session):
     ) == convert_lists_to_sets([])
 
 
+class PayloadModel(BaseModel):
+    some_kwarg: bool = True
+    other_kwarg: bool = False
+
+
 class PayloadState(LTM):
     name = "payload_state"
 
@@ -254,6 +274,9 @@ class PayloadLTM(LTM):
     name = "payload"
     init = [PayloadState]
     transitions = [{"from": PayloadState, "label": "go", "to": PayloadState}]
+    transition_payloads = {
+        "go": PayloadModel
+    }
 
 
 def test_payload():
