@@ -1,11 +1,11 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 from flou.conf import settings
 from .utils import json_dumps
 
 
-engine = create_engine(settings.database.url, echo=True, json_serializer=json_dumps)
+engine = create_engine(settings.database.url, json_serializer=json_dumps)  #, echo=True )
 
 
 def get_db(session=None):
@@ -17,5 +17,12 @@ def get_db(session=None):
         return BaseDatabase(session=session)
 
 
+SessionLocal = sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+)
+
+
 def get_session():
-    return Session(engine)
+    with SessionLocal() as session:
+        yield session

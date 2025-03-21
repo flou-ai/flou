@@ -186,6 +186,47 @@ chatbot.transition(`message_received`, payload={'message': "A message"})
 Payloads are great for data that is strictly related to a single transition
 since they aren't stored in a permanent fashion.
 
+### Transition Payload Schemas (Experimental)
+
+!!! experimental "This feature is experimental and subject to change"
+
+You can define JSON schemas for transition payloads using Pydantic models. This allows for:
+
+1. Validation of payload data
+2. Automatic form generation in the Studio UI
+3. Type hints and documentation
+
+To define payload schemas, add a `transition_payloads` dictionary to your LTM class that maps
+transition labels to Pydantic models:
+
+```python
+from pydantic import BaseModel, Field
+
+class WritingInstructions(BaseModel):
+    writing_instructions: str = Field(..., description="Instructions for writing")
+
+class MyStateMachine(LTM):
+    name = "my_state_machine"
+    init = [WaitingState]
+    
+    transitions = [
+        {
+            "from": WaitingState,
+            "label": "update_instructions",
+            "to": ProcessingState
+        },
+        # Other transitions...
+    ]
+    
+    # Define payload schemas
+    transition_payloads = {
+        "update_instructions": WritingInstructions
+    }
+```
+
+When these transitions are displayed in the Studio UI, a form will be generated based on the 
+Pydantic model's fields, with appropriate input types and validation.
+
 ## Store Management
 
 Flou provides a **data store** out-of-the-box. Each State Machine has a store
@@ -195,41 +236,39 @@ that any State can access and each State has it's own local store.
 class MyState(LTM):
     name = 'my_state'
 
-    def get_initial_state(self):
+    def get_initial_store(self):
         return {
             "key1": "example",
             "key2": "other",
         }
 
     def run(self, payload=None):
-        self.state  # local State store
+        self.store  # local State store
         # returns {
         #     "key1": "example",
         #     "key2": "other",
         # }
 
-        self.root.state
+        self.root.store
         # returns the State Machine global store
 ```
 
-!!! warning "`state` will be renamed `store` in upcoming releases"
-
-Every `LTM` has a function `get_initial_state` that is used during the State
+Every `LTM` has a function `get_initial_store` that is used during the State
 initialization to create it's local store. It must return a dictionary. Keys
 cannot start with `_` (underscore) as they are reserved for Flou internal
 properties.
 
-Using `self.state` you can retrieve the store of the current State.
+Using `self.store` you can retrieve the store of the current State.
 
-Using `self.root.state` you can access the global store of the State Machine.
+Using `self.root.store` you can access the global store of the State Machine.
 
 ### Modifying the store
 
-!!! warning "Don't attempt to directly modify `.state`, use `.update_state()` instead"
+!!! warning "Don't attempt to directly modify `.store`, use `.update_store()` instead"
     As Flou is prepared for concurrency in order to update the store you need to
-    use the special function `update_state`.
+    use the special function `update_store`.
 
-To update the store use the special function `update_state` which expects a
+To update the store use the special function `update_store` which expects a
 dictionary. This creates or overwrites the desired keys.
 
 To update a nested key in the store you need to use the Qualified Name of the
@@ -237,26 +276,26 @@ path to access that key separated by `.` (dots). For example:
 
 ``` python
 def run(self, payload=None):
-    self.state
+    self.store
     # returns {}
 
-    self.state['key'] = {'a': 1, 'b': 1}
-    # **INVALID**, use `update_state`
+    self.store['key'] = {'a': 1, 'b': 1}
+    # **INVALID**, use `update_store`
 
-    self.update_state({'key': {'a': 1, 'b': 2}})
-    # updates the state
+    self.update_store({'key': {'a': 1, 'b': 2}})
+    # updates the store
 
-    self.state
+    self.store
     # returns {'key': {'a': 1, 'b': 1}}
 
-    self.update_state({'key': {'a': 3})
+    self.update_store({'key': {'a': 3})
     # replaces `key` with `{'a': 1}`
 
     # use instead
-    self.update_state({'key.a': {'a': 3})  # replaces ['key']['a'] with {'a': 1}
+    self.update_store({'key.a': {'a': 3})  # replaces ['key']['a'] with {'a': 1}
 ```
 
 !!! abstract "Changes to the store are not immediately committed to the database"
-    When calling `update_state` the in memory store get's updated but the
+    When calling `update_store` the in memory store get's updated but the
     database isn't updated until the State code is executed successfully. This
     keeps the State execution in an atomic transaction.

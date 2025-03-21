@@ -32,19 +32,19 @@ def test_concurrent_sub_ltm(session):
 
     db = get_db(session)
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 8
-    assert doneLTM._state["sub_ltm_1"] == {
+    assert doneLTM._store["sub_ltm_1"] == {
         "_status": "active",
         "noop": {"_status": "active"},
     }
-    assert doneLTM._state["sub_ltm_2"] == {
+    assert doneLTM._store["sub_ltm_2"] == {
         "_status": "active",
         "noop": {"_status": "active"},
     }
@@ -71,13 +71,13 @@ class MultipleConcurrentSubLTM(LTM):
 class WaitForAllStates(LTM):
     name = "wait_for_all"
 
-    def get_initial_state(self):
-        initial = super().get_initial_state()
+    def get_initial_store(self):
+        initial = super().get_initial_store()
         initial["done"] = []
         return initial
 
     def run(self, payload=None):
-        done = self.atomic_state_append("done", payload)
+        done = self.atomic_store_append("done", payload)
         if convert_lists_to_sets(done) == convert_lists_to_sets(
             self.parent.launch_params
         ):
@@ -112,14 +112,14 @@ def test_multiple_concurrent_sub_ltm(session):
 
     db = get_db(session)
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
-    assert convert_lists_to_sets(doneLTM._state) == convert_lists_to_sets(
+    assert convert_lists_to_sets(doneLTM._store) == convert_lists_to_sets(
         {
             "_status": "active",
             "noop": {"_status": "active"},
@@ -183,13 +183,13 @@ def test_multiple_concurrent_sub_nested_ltm(session):
 
     db = get_db(session)
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
-    executor.transition(
+    engine.transition(
         doneLTM,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],
@@ -197,7 +197,7 @@ def test_multiple_concurrent_sub_nested_ltm(session):
     )
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
-    executor.transition(
+    engine.transition(
         doneLTM,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],
@@ -205,7 +205,7 @@ def test_multiple_concurrent_sub_nested_ltm(session):
     )
 
     assert len(doneLTM._snapshots) == 30
-    assert convert_lists_to_sets(doneLTM._state) == convert_lists_to_sets(
+    assert convert_lists_to_sets(doneLTM._store) == convert_lists_to_sets(
         {
             "_status": "active",
             "concurrent_sub_nested_1": {
@@ -243,19 +243,19 @@ def test_concurrent_instances_as_json(session):
     from flou.database import get_db
 
     db = get_db(session)
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
-    executor.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
+    engine = get_engine()
+    engine.transition(root, "start_{num}", params=[{"num": "1"}, {"num": "2"}])
 
-    executor.transition(
+    engine.transition(
         root,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],
         namespace="concurrent_sub_nested_root.concurrent_sub_nested_1",
     )
 
-    executor.transition(
+    engine.transition(
         root,
         "start_{num}",
         params=[{"num": "1"}, {"num": "2"}],

@@ -33,18 +33,18 @@ def test_namespaces(session):
     root = Root()
     root.start()
 
-    from flou.executor import get_executor
+    from flou.engine import get_engine
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(root, "start", namespace="global")
+    engine.transition(root, "start", namespace="global")
 
     from flou.database import get_db
 
     db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
-    assert convert_lists_to_sets(doneLTM._state) == convert_lists_to_sets(
+    assert convert_lists_to_sets(doneLTM._store) == convert_lists_to_sets(
         {
             "_status": "active",
             "child1": {

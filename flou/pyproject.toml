@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flou"
-version = "0.1.0-dev.3"
+version = "0.3.0.dev3"
 description = "The framework for LLM-powered apps"
 authors = [
     { name = "Iván Raskovsky", email = "raskovsky+flou@gmail.com" }
@@ -28,6 +28,7 @@ dependencies = [
     "watchdog",
     "sqlalchemy[asyncio]",
     "alembic",
+    "alembic_utils",
     "psycopg",
 ]
 

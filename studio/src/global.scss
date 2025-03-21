@@ -12,7 +12,8 @@
   font-size: 16px;
   font-style: normal;
   font-weight: 400;
-  line-height: 1.25rem; /* 142.857% */
+  line-height: 1.25rem;
+  /* 142.857% */
 }
 
 :root {
@@ -118,25 +119,32 @@ h3 {
 h1 {
   /* 48 Semibold */
   font-size: 3rem;
-  line-height: 3.625rem; /* 120.833% */
+  line-height: 3.625rem;
+  /* 120.833% */
 }
 
 h2 {
   /* 18 Semibold */
   font-size: 1.125rem;
-  line-height: 1.5rem; /* 133.333% */
+  line-height: 1.5rem;
+  /* 133.333% */
 }
 
 h3 {
   /* 14 Semibold */
   font-size: 0.875rem;
-  line-height: 1.25rem; /* 142.857% */
+  line-height: 1.25rem;
+  /* 142.857% */
 }
 
 p,
 a {
   font-size: 0.875rem;
   color: var(--black-100, #fff);
+}
+
+b {
+  font-weight: 600;
 }
 
 /* tables */
@@ -178,7 +186,8 @@ tr th {
   max-width: 13.75rem;
   font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1.125rem; /* 150% */
+  line-height: 1.125rem;
+  /* 150% */
   text-align: center;
   vertical-align: middle;
   padding: .25rem;
@@ -186,15 +195,64 @@ tr th {
   text-overflow: ellipsis;
 }
 
+.th-icon {
+  display: flex;
+  align-items: center;
+  font-size: inherit;
+  gap: .25rem;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  padding: 0 1rem;
+
+  a, button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--black-80, rgba(28, 28, 28, 0.40));
+    text-decoration: none;
+
+    &:hover {
+      color: var(--black-100, #1c1c1c);
+    }
+  }
+}
+
+.table-row-controls {
+  display: flex;
+  flex-direction: row;
+  a, button {
+    color: var(--black-80, rgba(28, 28, 28, 0.40));
+
+    &:hover {
+      color: var(--black-100, #1c1c1c);
+    }
+  }
+}
+
 /* Forms */
 
-form, fieldset {
+form,
+fieldset {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-label:not(fieldset.radio > label) {
+.label, label:not(fieldset.radio > label) {
+  font-size: 0.75rem;
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+}
+form label:not(fieldset.radio > label) {
   display: flex;
   padding: var(--16, 1rem) var(--20, 1.25rem);
   flex-direction: column;
@@ -204,27 +262,26 @@ label:not(fieldset.radio > label) {
   border-radius: var(--16, 1rem);
   border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
   background: var(--white-80, rgba(255, 255, 255, 0.8));
-  color: var(--black-40, rgba(28, 28, 28, 0.4));
-  /* 12 Regular */
-  font-size: 0.75rem;
 }
 
-label:not(fieldset.radio > label) input,
-label:not(fieldset.radio > label) textarea {
+form label:not(fieldset.radio > label) input,
+form label:not(fieldset.radio > label) textarea {
   display: flex;
   min-height: 1.75rem;
   align-items: flex-start;
   border-radius: var(--8, 0.5rem);
   border: none;
   width: 100%;
+  background: var(--white-80);
+  color: var(--black-100);
 }
 
-label:not(fieldset.radio > label) input:focus,
-label:not(fieldset.radio > label) textarea:focus {
+form label:not(fieldset.radio > label) input:focus,
+form label:not(fieldset.radio > label) textarea:focus {
   outline: none;
 }
 
-label:focus-within:not(fieldset.radio > label) {
+form label:focus-within:not(fieldset.radio > label) {
   border: 1px solid var(--black-20, rgba(28, 28, 28, 0.2));
 
   /* Focus */
@@ -251,7 +308,7 @@ fieldset.radio label {
   align-items: center;
 }
 
-label select {
+form label select {
   appearance: none;
   width: 100%;
   padding: 0;
@@ -262,8 +319,8 @@ label select {
   position: relative;
 }
 
-label select::before,
-label select::after {
+form label select::before,
+form label select::after {
   --size: 0.3rem;
   position: absolute;
   content: "";
@@ -271,14 +328,14 @@ label select::after {
   pointer-events: none;
 }
 
-label select::before {
+form label select::before {
   border-left: var(--size) solid transparent;
   border-right: var(--size) solid transparent;
   border-bottom: var(--size) solid black;
   top: 40%;
 }
 
-label select::after {
+form label select::after {
   border-left: var(--size) solid transparent;
   border-right: var(--size) solid transparent;
   border-top: var(--size) solid black;
@@ -351,9 +408,10 @@ hr {
   border-bottom: 1px solid var(--black-10, rgba(28, 28, 28, 0.10));
 }
 
-#graph-container > div > div {
+#graph-container>div>div {
   pointer-events: none;
-  & > div {
+
+  &>div {
     pointer-events: auto;
   }
 }

@@ -67,6 +67,66 @@ At any point in time you can inspect a snapshot of the internal store of the LTM
 (and any sub State) or see what particular changes (diff) were made to the store
 in that snapshot.
 
+### Store UI Widgets (Experimental)
+
+!!! experimental "This feature is experimental and subject to change"
+
+You can define custom UI widgets for your LTMs stores that will be automatically
+displayed in the Studio. This allows for:
+
+1. Structured and customized visualization of your LTM state
+2. Interactive elements specific to your application domain
+3. Better user experience when working with complex data structures
+
+To define UI widgets, override the `get_ui_widgets` method in your LTM class:
+
+```python
+from flou.ltm import LTM
+from flou.ui import TableWidget, KeyValueWidget, ChatWidget
+
+class MyLTM(LTM):
+    name = "my_ltm"
+    
+    def get_initial_state(self):
+        return {
+            "messages": [
+                {"user": "User", "content": "Hello", "timestamp": "2025-03-20T10:00:00Z"},
+                {"user": "Bot", "content": "Hi there!", "timestamp": "2025-03-20T10:01:00Z"}
+            ],
+            "stats": {
+                "visits": 42,
+                "last_activity": "2025-03-20",
+                "active": True
+            }
+        }
+    
+    def get_ui_widgets(self):
+        return [
+            ChatWidget(
+                field="messages",
+                user_field="user",
+                content_field="content",
+                timestamp_field="timestamp",
+                title="Conversation"
+            ),
+            KeyValueWidget(
+                field="stats",
+                title="Statistics"
+            )
+        ]
+```
+
+Available widget types include:
+
+- `ChatWidget` - For displaying chat-like conversations
+- `TableWidget` - For displaying tabular data
+- `KeyValueWidget` - For displaying key-value pairs
+- `ListWidget` - For displaying simple lists
+- `ButtonsWidget` - For creating clickable actions
+- `SubLTMWidget` - For displaying nested LTMs
+
+Each widget type has specific configuration options to customize its appearance and behavior.
+
 ## Playground
 
 In the Studio's playground you can not only inspect an LTM but interact with it,

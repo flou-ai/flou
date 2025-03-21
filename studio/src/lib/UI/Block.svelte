@@ -19,7 +19,7 @@
 		flex: 1;
 		padding: var(--24, 1.5rem);
 		align-items: flex-start;
-		gap: var(--28, 1.75rem);
+		// gap: var(--28, 1.75rem);
 		border-radius: var(--16, 1rem);
 		background: var(--primary-light, #f7f9fb);
 	}

@@ -1,4 +1,3 @@
-import pytest
 from flou.registry import registry
 from flou.ltm import LTM
 

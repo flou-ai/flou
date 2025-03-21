@@ -78,8 +78,8 @@ store](#using-nested-stores).
 You can access the `root` or `parent` stores to share information between State
 Machines.
 
-* `self.parent.state` & `self.parent.update_state(...)`
-* `self.root.state` & `self.root.update_state(...)`
+* `self.parent.store` & `self.parent.update_store(...)`
+* `self.root.store` & `self.root.update_store(...)`
 
 ## Transition Namespaces
 

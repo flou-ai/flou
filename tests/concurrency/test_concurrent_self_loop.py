@@ -23,15 +23,15 @@ def test_concurrent_self_loop(session):
     root = ConcurrentWithLoopLTM()
     root.start()
 
-    from flou.executor import get_executor
-    executor = get_executor()
-    executor.transition(root, "start_{kwarg}", params=[{'kwarg': '1'}])
-    executor.transition(root, "start_{kwarg}", params=[{'kwarg': '2'}])
+    from flou.engine import get_engine
+    engine = get_engine()
+    engine.transition(root, "start_{kwarg}", params=[{'kwarg': '1'}])
+    engine.transition(root, "start_{kwarg}", params=[{'kwarg': '2'}])
 
     from flou.database import get_db
     db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 9
-    assert doneLTM._state['concurrent_1'] == {'_status': 'active'}
-    assert doneLTM._state['concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['concurrent_2'] == {'_status': 'active'}

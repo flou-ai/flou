@@ -1,11 +1,11 @@
 from copy import deepcopy
-from flou.conf import Executor
+from flou.conf import Engine
 
 
-class BaseExecutor:
+class BaseEngine:
     conf = None
 
-    def __init__(self, conf: Executor):
+    def __init__(self, conf: Engine):
         self.conf = conf
 
     def execute(self, ltm, item_id, fqn, payload):

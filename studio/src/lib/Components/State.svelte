@@ -4,12 +4,14 @@
 	import SnapshotItem from './SnapshotItem.svelte';
 	import Tabs from '../UI/Tabs.svelte';
 	import Tab from '../UI/Tab.svelte';
+	import LTMWidgets from './LTMWidgets.svelte';
 
 	export let fullSnapshot: any = {};
 	export let currentSnapshot: any = {};
+	export let ltmId: string = '';
 </script>
 
-<h3><Camera size="1.25rem" />State</h3>
+<h3><Camera size="1.25rem" />Store</h3>
 {#if fullSnapshot.executeQueue?.length}
 	<div>
 		Pending Executions:
@@ -32,10 +34,13 @@
 {/if}
 
 <Tabs>
+	<Tab title="Custom UI">
+    <LTMWidgets {ltmId} state={fullSnapshot.store || fullSnapshot.state} />
+  </Tab>
 	<Tab title="Raw Store Diff">
 		<JsonView json={currentSnapshot?.patch} />
 	</Tab>
 	<Tab title="Full Raw Store">
-		<JsonView json={fullSnapshot.state} />
+		<JsonView json={fullSnapshot.store || fullSnapshot.state} />
 	</Tab>
 </Tabs>

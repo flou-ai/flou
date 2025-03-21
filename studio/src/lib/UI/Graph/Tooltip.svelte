@@ -6,7 +6,7 @@
 	export let node: any;
 	export let transform = '';
 	export let updateRoot;
-	export let state: any;
+	export let store: any;
 	export let concurrent: any;
 	export let currentRootInstance: any;
 
@@ -28,8 +28,8 @@
 		if (concurrent[data.id]) {
 			instances = concurrent[data.id].filter((instance: any) => {
 				// check if the instance exists in the current snapshot by
-				// checking if it exists in the state
-				let existsInSnapshot = getDottedPath(state.state, instance.fqn);
+				// checking if it exists in the store
+				let existsInSnapshot = getDottedPath(store.status, instance.fqn);
 
 				// Filter instances that are children of selected instances
 				let isChildOfRootInstance = instance.fqn.startsWith(`${currentRootInstance}.`);

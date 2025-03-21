@@ -52,5 +52,5 @@ jobs:
         env:
           DATABASE__HOST: localhost
           DATABASE__PORT: 5432
-          EXECUTOR__HOST: localhost
-          EXECUTOR__PORT: 6379
+          ENGINE__HOST: localhost
+          ENGINE__PORT: 6379

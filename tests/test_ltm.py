@@ -1,18 +1,19 @@
 from copy import deepcopy
 
 import pytest
+from pydantic import BaseModel
 
 from flou.database import get_db
-from flou.executor import get_executor
-from flou.conf import Executor
+from flou.engine import get_engine
+from flou.conf import Engine
 from flou.ltm import LTM
-from .utils import patch_settings, convert_lists_to_sets
+from .utils import convert_lists_to_sets, patch_settings
 
 
 class Child(LTM):
     name = "child"
 
-    def get_initial_state(self):
+    def get_initial_store(self):
         return {"test": "test"}
 
 
@@ -25,43 +26,43 @@ class Root(LTM):
 @pytest.mark.parametrize(
     "patch_settings",
     [
-        {"executor": Executor(engine="flou.executor.dummy.DummyExecutor")},
+        {"engine": Engine(engine="flou.engine.dummy.DummyEngine")},
     ],
     indirect=True,
 )
-def test_initial_and_get_state(patch_settings, session):
+def test_initial_and_get_store(patch_settings, session):
 
     root = Root()
     root._init_ltms()
 
-    assert root.state["_status"] == "init"
-    assert root._sub_ltms["child"].state["_status"] == "init"
-    assert root._sub_ltms["child"].state["test"] == "test"
+    assert root.store["_status"] == "init"
+    assert root._sub_ltms["child"].store["_status"] == "init"
+    assert root._sub_ltms["child"].store["test"] == "test"
 
 
-def test_update_state(session):
+def test_update_store(session):
 
     db = get_db(session)
 
     root = Root()
     id = root.start()
-    root.update_state({"str": "test"})
-    root.update_state({"int": 1})
-    root.update_state({"bool": True})
-    root.update_state({"dict": {"test": "test"}})
-    root.update_state({"list": [1, 2, 3]})
-    db.update_state(root, "test", "test")
+    root.update_store({"str": "test"})
+    root.update_store({"int": 1})
+    root.update_store({"bool": True})
+    root.update_store({"dict": {"test": "test"}})
+    root.update_store({"list": [1, 2, 3]})
+    db.update_store(root, "test", "test")
 
     root2 = db.load_ltm(id)
 
-    assert root2.state["str"] == "test"
-    assert root2.state["int"] == 1
-    assert root2.state["bool"] == True
-    assert root2.state["dict"] == {"test": "test"}
-    assert root2.state["list"] == [1, 2, 3]
+    assert root2.store["str"] == "test"
+    assert root2.store["int"] == 1
+    assert root2.store["bool"] == True
+    assert root2.store["dict"] == {"test": "test"}
+    assert root2.store["list"] == [1, 2, 3]
 
-    root2.update_state({"new_key": [1, 2, 3]})
-    db.update_state(root2, "test2", "test")
+    root2.update_store({"new_key": [1, 2, 3]})
+    db.update_store(root2, "test2", "test")
 
     ltm = db.load_ltm(id, snapshots=True)
     snapshots = ltm._snapshots
@@ -81,7 +82,7 @@ def test_update_state(session):
     for snapshot in snapshots:
         recreation = jsonpatch.apply_patch(recreation, snapshot["patch"])
 
-    assert recreation == root2._state
+    assert recreation == root2._store
 
 
 class Start(LTM):
@@ -109,9 +110,9 @@ def test_transition(session):
     db = get_db(session)
     linear_loaded = db.load_ltm(id)
 
-    assert linear_loaded.state["_status"] == "active"
-    assert linear_loaded.state["start"]["_status"] == "finished"
-    assert linear_loaded.state["end"]["_status"] == "active"
+    assert linear_loaded.store["_status"] == "active"
+    assert linear_loaded.store["start"]["_status"] == "finished"
+    assert linear_loaded.store["end"]["_status"] == "active"
 
 
 class NestedLTM(LTM):
@@ -144,6 +145,20 @@ def test_structure(session):
             ],
         }
     )
+    
+    # Test payload schema
+    ltm = PayloadLTM()
+    structure = ltm.as_json()
+    
+    assert "transitions" in structure
+    assert len(structure["transitions"]) == 1
+    assert "payload_schema" in structure["transitions"][0]
+    
+    schema = structure["transitions"][0]["payload_schema"]
+    assert schema["title"] == "PayloadModel"
+    assert "properties" in schema
+    assert "some_kwarg" in schema["properties"]
+    assert "other_kwarg" in schema["properties"]
     ltm = NestedLTM()
     ltm.start()
     structure = ltm.as_json()
@@ -242,45 +257,53 @@ def test_snapshots_queues(session):
     ) == convert_lists_to_sets([])
 
 
+class PayloadModel(BaseModel):
+    some_kwarg: bool = True
+    other_kwarg: bool = False
+
+
 class PayloadState(LTM):
     name = "payload_state"
 
     def run(self, payload=None):
         if payload:  # at init there's no payload
-            self.update_state(payload)
+            self.update_store(payload)
 
 
 class PayloadLTM(LTM):
     name = "payload"
     init = [PayloadState]
     transitions = [{"from": PayloadState, "label": "go", "to": PayloadState}]
+    transition_payloads = {
+        "go": PayloadModel
+    }
 
 
 def test_payload():
     ltm = PayloadLTM()
     ltm.start()
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
-    assert ltm.state["payload_state"]["some_kwarg"] == True
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
+    assert ltm.store["payload_state"]["some_kwarg"] == True
 
-    executor.transition(ltm, "go", payload={"other_kwarg": False})
+    engine.transition(ltm, "go", payload={"other_kwarg": False})
 
-    assert ltm.state["payload_state"]["other_kwarg"] == False
+    assert ltm.store["payload_state"]["other_kwarg"] == False
 
 
 def test_rollback(session):
     ltm = PayloadLTM()
     ltm.start()
-    init_state = deepcopy(ltm._state)
+    init_store = deepcopy(ltm._store)
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
-    middle_state = deepcopy(ltm._state)
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
+    middle_store = deepcopy(ltm._store)
 
-    executor.transition(ltm, "go", payload={"other_kwarg": False})
+    engine.transition(ltm, "go", payload={"other_kwarg": False})
 
 
     db = get_db(session)
@@ -294,13 +317,13 @@ def test_rollback(session):
     # check the same object
     assert len(ltm_rollback._snapshots) == 5
     assert len(ltm_rollback._rollbacks) == 1
-    assert ltm_rollback._state == middle_state
+    assert ltm_rollback._store == middle_store
 
     # check a reloaded object
     ltm_rollback1 = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
     assert len(ltm_rollback1._snapshots) == 5
     assert len(ltm_rollback1._rollbacks) == 1
-    assert ltm_rollback1._state == middle_state
+    assert ltm_rollback1._store == middle_store
 
     # rollback to after init
     ltm_rollback = db.rollback(ltm_final, 2)
@@ -308,29 +331,29 @@ def test_rollback(session):
     # check the same object
     assert len(ltm_rollback._snapshots) == 3
     assert len(ltm_rollback._rollbacks) == 2
-    assert ltm_rollback._state == init_state
+    assert ltm_rollback._store == init_store
 
     # check a reloaded object
     ltm_rollback1 = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
     assert len(ltm_rollback1._snapshots) == 3
     assert len(ltm_rollback1._rollbacks) == 2
-    assert ltm_rollback1._state == init_state
+    assert ltm_rollback1._store == init_store
 
 
 def test_recover_rollback(session):
     # create an LTM
     ltm = PayloadLTM()
     ltm.start()
-    init_state = deepcopy(ltm._state)
+    init_store = deepcopy(ltm._store)
 
-    executor = get_executor()
+    engine = get_engine()
 
     # execute "go"
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
-    middle_state = deepcopy(ltm._state)
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
+    middle_store = deepcopy(ltm._store)
 
     # execute "go" again
-    executor.transition(ltm, "go", payload={"other_kwarg": False})
+    engine.transition(ltm, "go", payload={"other_kwarg": False})
 
 
     db = get_db(session)
@@ -350,49 +373,49 @@ def test_recover_rollback(session):
     # check a reloaded object
     ltm_rollback = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
     assert len(ltm_rollback._rollbacks) == 3
-    assert ltm_rollback._state == ltm_final._state
+    assert ltm_rollback._store == ltm_final._store
 
 
 def test_replay(session):
     ltm = PayloadLTM()
     ltm.start()
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
-    middle_state = deepcopy(ltm._state)
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
+    middle_store = deepcopy(ltm._store)
 
 
     db = get_db()
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
-    db.replay(ltm_final, 3)
+    db.rollback(ltm_final, 3, replay=True)
 
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
     # check the same object
     assert len(ltm_final._snapshots) == 5
     assert len(ltm_final._rollbacks) == 1
-    assert ltm_final._state == middle_state
+    assert ltm_final._store == middle_store
 
 def test_restart(session):
 
 
     db = get_db()
-    executor = get_executor()
+    engine = get_engine()
 
     ltm = PayloadLTM()
     ltm.start()
 
     ltm_initial = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
-    initial_state = deepcopy(ltm_initial._state)
+    initial_store = deepcopy(ltm_initial._store)
 
-    executor.transition(ltm, "go", payload={"some_kwarg": True})
+    engine.transition(ltm, "go", payload={"some_kwarg": True})
 
     db = get_db()
     ltm_final = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
-    db.replay(ltm_final, 0)
+    db.rollback(ltm_final, 0, replay=True)
 
     ltm_restart = db.load_ltm(ltm.id, snapshots=True, rollbacks=True)
 
@@ -400,7 +423,7 @@ def test_restart(session):
     assert len(ltm_restart._snapshots) == len(ltm_initial._snapshots)
     assert len(ltm_restart._rollbacks) == 1
 
-    assert ltm_restart._state == initial_state
+    assert ltm_restart._store == initial_store
 
 
 ### Test that store with None as value doesn't break transition
@@ -418,17 +441,17 @@ class RootWithNone(LTM):
 
     transitions = [{"from": Child1, "label": "go", "to": Child2}]
 
-    def get_initial_state(self):
-        initial_state = super().get_initial_state()
-        initial_state["test"] = None
-        return initial_state
+    def get_initial_store(self):
+        initial_store = super().get_initial_store()
+        initial_store["test"] = None
+        return initial_store
 
 def test_store_none_transition(session):
     root = RootWithNone()
     root.start()
 
-    executor = get_executor()
+    engine = get_engine()
 
-    executor.transition(root, "go")
+    engine.transition(root, "go")
 
-    assert root.state["test"] == None
+    assert root.store["test"] == None

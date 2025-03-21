@@ -25,11 +25,11 @@ class MyState(LTM):
         params = {}
         self.transition(label, **params)
 
-        self.update_state({'internal_state_key': 'state_value'})
-        self.root.update_state({'global_key': 'global_value'})
+        self.update_store({'internal_store_key': 'store_value'})
+        self.root.update_store({'global_key': 'global_value'})
 
-        print(self.state['internal_state_key'])  # prints 'state_value'
-        print(self.root.state['global_key'])  # prints 'global_value'
+        print(self.store['internal_store_key'])  # prints 'store_value'
+        print(self.root.store['global_key'])  # prints 'global_value'
 
 class EndState(LTM):
     def run(self, **params):
@@ -53,7 +53,7 @@ registry.register(MyNetwork)
 * `LTM.start()`: start the root LTM, should be called only once
 * `LTM.root`: returns the `root` LTM
 * `LTM.parent`: returns the `parent` LTM
-* `LTM.state`: returns a dict with the current LTM state, you can use `self.root.state` for global state. Don't assign directly, see `LTM.update_state`
-* `LTM.update_state(update_list)`: pass a list of `{key: value}` to update the state. Use `self.root.update_state` to update the global state
-* `LTM.atomic_state_append(key, value)`: atomically and immediately append `value` to a pre initialized list `key` in `self.state`. Use only in concurrent states.
+* `LTM.store`: returns a dict with the current LTM store, you can use `self.root.store` for global store. Don't assign directly, see `LTM.update_store`
+* `LTM.update_store(update_list)`: pass a list of `{key: value}` to update the store. Use `self.root.update_store` to update the global store
+* `LTM.atomic_store_append(key, value)`: atomically and immediately append `value` to a pre initialized list `key` in `self.store`. Use only in concurrent states.
 * `LTM.transition(label, payload, params, namespace)`: transition all LTMS with `label` transition

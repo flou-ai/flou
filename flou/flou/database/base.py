@@ -4,16 +4,16 @@ import importlib
 import sys
 import traceback
 
-import json
 import jsonpatch
 from redis import Redis
-from sqlalchemy import update, func, ARRAY, String, cast, text, literal_column
+from sqlalchemy import update, func, cast, text, literal_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
 
 from . import get_session
-from .models import Error, LTM
 from .utils import json_dumps
 from flou.conf import settings
+from flou.engine.models import Error
+from flou.ltm.models import LTM
 
 
 redis = Redis(host=settings.redis.host, port=settings.redis.port, db=settings.redis.db)
@@ -27,7 +27,7 @@ class BaseDatabase:
     def get_session(self):
         if self.session:
             return self.session
-        return get_session()
+        return next(get_session())
 
     def list_ltms(self, playground=False):
 
@@ -48,7 +48,7 @@ class BaseDatabase:
         return ltms
 
     def create_ltm(self, ltm, payload=None, params=None, playground=False):
-        from flou.executor import get_executor
+        from flou.engine import get_engine
 
         # get the fqn from an instance
         fqn = ltm.get_class_fqn()
@@ -67,7 +67,7 @@ class BaseDatabase:
                     name=ltm.name,
                     fqn=fqn,
                     kwargs=ltm.params,
-                    state=ltm.state,
+                    store=ltm.store,
                     snapshots=[snapshot],
                     playground=playground,
                 )
@@ -79,7 +79,7 @@ class BaseDatabase:
                 existing_ltm.name = ltm.name
                 existing_ltm.fqn = fqn
                 existing_ltm.kwargs = ltm.params
-                existing_ltm.state = ltm.state
+                existing_ltm.store = ltm.store
                 existing_ltm.snapshots = [snapshot]
                 existing_ltm.playground = playground
                 session.commit()
@@ -87,7 +87,7 @@ class BaseDatabase:
         ltm._snapshots = [snapshot]
 
         # immediate cause we need this to finish before a sub state can execute
-        get_executor().consume_queues(ltm)
+        get_engine().consume_queues(ltm)
 
         # publish to redis
         redis.publish(
@@ -112,7 +112,7 @@ class BaseDatabase:
                 LTM.id,
                 LTM.fqn,
                 LTM.kwargs,
-                LTM.state,
+                LTM.store,
                 LTM.created_at,
                 LTM.updated_at,
             ]
@@ -128,7 +128,7 @@ class BaseDatabase:
 
             args = {
                 "id": pk,
-                "state": ltm_data.state,
+                "store": ltm_data.store,
                 "created_at": ltm_data.created_at,
                 "updated_at": ltm_data.updated_at,
                 "params": ltm_data.kwargs,
@@ -152,7 +152,7 @@ class BaseDatabase:
                 fqn=ltm.fqn,
                 structure=ltm.structure,
                 kwargs=ltm.kwargs,
-                state=ltm.state,
+                store=ltm.store,
                 snapshots=ltm.snapshots,
                 playground=True,
                 source_id=pk,
@@ -165,7 +165,7 @@ class BaseDatabase:
             last_id = new_ltm.id
         return last_id
 
-    def _update_state(self, ltm_id, updates, snapshot):
+    def _update_store(self, ltm_id, updates, snapshot):
 
         # FIXME: we were previously using nested `jsonb_set` but on large inputs
         # we surpassed python's recursion limit. The way to go is using postgres
@@ -180,14 +180,14 @@ class BaseDatabase:
             return path
 
         sql_updates = {
-            f"state{to_brackets(path)}": json_dumps(value)
+            f"store{to_brackets(path)}": json_dumps(value)
             for path, value in updates
         }
         update_query = text(
             f"""
-                            UPDATE ltms SET
+                            UPDATE ltm_ltms SET
                             snapshots = snapshots || :snapshot,
-                            {', '.join([f"{key} = CAST('{value}' AS JSONB) " for i, (key, value) in enumerate(sql_updates.items())])}
+                            {', '.join([f"{key} = CAST(:value{i} AS JSONB) " for i, key in enumerate(sql_updates.keys())])}
                             WHERE id=:ltm_id
                             """
         )
@@ -196,6 +196,7 @@ class BaseDatabase:
             "snapshot": json_dumps(snapshot),
             "ltm_id": ltm_id,
         }
+        values.update({f"value{i}": value for i, value in enumerate(sql_updates.values())})
 
         with self.get_session() as session:
             session.execute(
@@ -212,7 +213,7 @@ class BaseDatabase:
             return path
 
         sql_updates = {
-            literal_column(f"state{to_brackets(path)}") : cast(value, JSONB)
+            literal_column(f"store{to_brackets(path)}") : cast(value, JSONB)
             for path, value in updates
         }
 
@@ -233,18 +234,18 @@ class BaseDatabase:
         return
 
         # nested jsonb_set implementation: works for small amounts of updates
-        state_value = LTM.state
+        store_value = LTM.store
         for path, value in updates:
             key = path.split(".")
             # key = ARRAY([path_element for path_element in key], String)
-            state_value = func.jsonb_set(state_value, key, cast(value, JSONB))
+            store_value = func.jsonb_set(store_value, key, cast(value, JSONB))
 
         with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=state_value,
+                    store=store_value,
                     snapshots=LTM.snapshots + [snapshot],
                     # snapshots=func.jsonb_insert(
                     #     LTM.snapshots, "{-1}", json_dumps(snapshot), True
@@ -253,7 +254,7 @@ class BaseDatabase:
             )
             session.commit()
 
-    def update_state(self, ltm, reason, item=None):
+    def update_store(self, ltm, reason, item=None):
 
         updates = ltm.root._updates_queue
 
@@ -270,7 +271,7 @@ class BaseDatabase:
 
         snapshot = self.calculate_snapshot(ltm.root, reason, item)
 
-        self._update_state(ltm.root.id, prepared_updates, snapshot)
+        self._update_store(ltm.root.id, prepared_updates, snapshot)
 
         # add snapshot to ltm if we have them
         if ltm.root._snapshots:
@@ -290,8 +291,8 @@ class BaseDatabase:
         )
 
     def calculate_snapshot(self, ltm, reason, item):
-        patch = jsonpatch.make_patch(ltm._initial_state, ltm._state).patch
-        ltm._initial_state = deepcopy(ltm._state)
+        patch = jsonpatch.make_patch(ltm._initial_store, ltm._store).patch
+        ltm._initial_store = deepcopy(ltm._store)
         snapshot = {
             "time": f"{datetime.now()}",
             "reason": reason,
@@ -302,36 +303,36 @@ class BaseDatabase:
         }
         return snapshot
 
-    def recreate_state_from_snapshot(self, ltm, snapshot_index):
+    def recreate_store_from_snapshot(self, ltm, snapshot_index):
         """
-        Recreate a previous state from the list of snapshots up to (including) `snapshot_index`
+        Recreate a previous store from the list of snapshots up to (including) `snapshot_index`
         """
-        recreated_state = {}
+        recreated_store = {}
 
         for snapshot in ltm._snapshots[: snapshot_index + 1]:
-            recreated_state = jsonpatch.apply_patch(recreated_state, snapshot["patch"])
+            recreated_store = jsonpatch.apply_patch(recreated_store, snapshot["patch"])
 
-        return recreated_state
+        return recreated_store
 
-    def _rollback(self, ltm_id, new_state, new_snapshots, new_rollback):
+    def _rollback(self, ltm_id, new_store, new_snapshots, new_rollback):
         with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=new_state,
+                    store=new_store,
                     snapshots=new_snapshots,
                     rollbacks=LTM.rollbacks + [new_rollback],
                 )
             )
             session.commit()
 
-    def rollback(self, ltm, snapshot_index=None, rollback_index=None, reason="manual"):
+    def rollback(self, ltm, snapshot_index=None, rollback_index=None, replay=False, reason="manual"):
         """
         Rollback the LTM to a previous snapshot.
 
         The snapshot_index is zero indexed and is included.
-        Adds the current state & snapshots to the rollbacks.
+        Adds the current store & snapshots to the rollbacks.
         """
 
         if snapshot_index is None and rollback_index is None:
@@ -343,30 +344,34 @@ class BaseDatabase:
 
         new_rollback = {
             "time": f"{datetime.now()}",
-            "state": ltm._state,
+            "store": ltm._store,
             "snapshots": ltm._snapshots,
             "reason": reason,
         }
 
         if snapshot_index is not None:
+            if replay:
+                snapshot = ltm._snapshots[snapshot_index]
+                snapshot_index -= 1
+
             new_snapshots = ltm._snapshots[: snapshot_index + 1]
             # calculate snapshot until that point
             if snapshot_index == -1:  # if restart
-                ltm._state = None
+                ltm._store = None
                 ltm._init_ltms()
-                new_state = ltm._state
+                new_store = ltm._store
             else:
-                new_state = self.recreate_state_from_snapshot(ltm, snapshot_index)
+                new_store = self.recreate_store_from_snapshot(ltm, snapshot_index)
         else:
             new_snapshots = ltm._rollbacks[rollback_index]["snapshots"]
-            new_state = ltm._rollbacks[rollback_index]["state"]
+            new_store = ltm._rollbacks[rollback_index]["store"]
             if not reason:
                 reason = "recover rollback"
 
-        self._rollback(ltm.id, new_state, new_snapshots, new_rollback)
+        self._rollback(ltm.id, new_store, new_snapshots, new_rollback)
 
         ltm._snapshots = new_snapshots
-        ltm._state = new_state
+        ltm._store = new_store
         if not ltm._rollbacks:
             ltm._rollbacks = []
         ltm._rollbacks.append(new_rollback)
@@ -382,21 +387,19 @@ class BaseDatabase:
             ),
         )
 
-        # set _initial_state to be used in snapshot calculation
-        ltm._initial_state = {}
+        # set _initial_store to be used in snapshot calculation
+        ltm._initial_store = {}
+
+        from flou.engine import get_engine
+        engine = get_engine()
+
+        if replay:
+            if snapshot_index == -1:
+                engine.start(ltm, **snapshot["item"])
+            else:
+                engine.transition(ltm, **snapshot["item"])
+
         return ltm
-
-    def replay(self, ltm, snapshot_index):
-        snapshot = ltm._snapshots[snapshot_index]
-        ltm = self.rollback(ltm, snapshot_index - 1, reason="replay")
-        from flou.executor import get_executor
-
-        executor = get_executor()
-        # special case for restart
-        if snapshot_index == 0:
-            executor.start(ltm, **snapshot["item"])
-        else:
-            executor.transition(ltm, **snapshot["item"])
 
     def _atomic_append(self, ltm_id, path, value):
         path_last_element = path + ["-1"]
@@ -406,11 +409,11 @@ class BaseDatabase:
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=func.jsonb_insert(
-                        LTM.state, path_last_element, cast(value, JSONB), True
+                    store=func.jsonb_insert(
+                        LTM.store, path_last_element, cast(value, JSONB), True
                     )
                 )
-                .returning(func.jsonb_extract_path(LTM.state, *path))
+                .returning(func.jsonb_extract_path(LTM.store, *path))
             )
             result = result.scalar_one()
             session.commit()

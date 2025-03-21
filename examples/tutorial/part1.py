@@ -21,4 +21,4 @@ class BedtimeStoryWriter(LTM):
             model="gpt-4o-mini",
         )
 
-        self.update_state({'story': story.choices[0].message.content})
+        self.update_store({'story': story.choices[0].message.content})

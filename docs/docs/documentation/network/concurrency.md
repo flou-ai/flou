@@ -99,7 +99,7 @@ launched with names: `processing_file_1111` and `processing_file_2222`.
 * You can have as many parameters as needed in a parameterized transition.
 * Use `self.params` to get the params of the current executing LTM.
 * You can concurrently launch either States or sub State Machines.
-* Each parameterized LTM has it's own local store accessible via `self.state`.
+* Each parameterized LTM has it's own local store accessible via `self.store`.
 
 ## Joining concurrent flows
 
@@ -110,14 +110,14 @@ store.
 ### Concurrently Updating the Store
 
 When using concurrency you need to be very careful about updates to the store.
-Internally `update_state` updates the local memory store immediately but waits
+Internally `update_store` updates the local memory store immediately but waits
 until the State execution finishes to update the database store atomically with
 just one call. This makes it difficult to work with concurrent stores when you
 have several LTMs updating it at the same time.
 
-For this use case you can use `LTM.atomic_state_append(key, value)` that
+For this use case you can use `LTM.atomic_store_append(key, value)` that
 atomically and immediately appends `value` to a pre initialized list `key` in
-`self.state` and returns the updated list. This can be used when joining
+`self.store` and returns the updated list. This can be used when joining
 concurrent forks.
 
 ### Joining forked workflows
@@ -143,7 +143,7 @@ class ConcurrentJoinMachine(LTM):
         { 'label': 'done', 'from': JoinTasks, 'to': Finished},
     ]
 
-    def get_initial_state(self):
+    def get_initial_store(self):
         return {'executed_tasks': []}
 ```
 
@@ -167,7 +167,7 @@ class TaskA(LTM):
 ```
 
 Because `JoinTasks` will be called 3 times and possible at the same time we need
-to use `atomic_state_append` that will add an item to `executed_tasks` and
+to use `atomic_store_append` that will add an item to `executed_tasks` and
 return the new value atomically. This way we can guarantee that in only 1 of the
 3 executions `executed_tasks` will have three items, hence only transitioning
 `done` once.
@@ -180,7 +180,7 @@ class JoinTasks(LTM):
     name = 'join_tasks'
 
     def run(self):
-        executed_tasks = self.parent.atomic_state_append('executed_tasks', payload)
+        executed_tasks = self.parent.atomic_store_append('executed_tasks', payload)
         if set(executed_tasks) == set(('A', 'B', 'C')):
             self.transition('done')
 ```
@@ -204,7 +204,7 @@ class LaunchFilesProcessing(LTM):
     def run(self, payload):
         uploaded_file_ids = payload['uploaded_file_ids']
 
-        self.parent.update_state('launched_params', uploaded_file_ids)
+        self.parent.update_store('launched_params', uploaded_file_ids)
 
         self.transition(
             "start_{file_id}",
@@ -219,7 +219,7 @@ class JoinProcessing(LTM):
     name = 'join_processing'
 
     def run(self):
-        processed_files = self.parent.atomic_state_append('processed_files', payload)
-        if set(processed_files) == set(self.parent.state['launched_params']):
+        processed_files = self.parent.atomic_store_append('processed_files', payload)
+        if set(processed_files) == set(self.parent.store['launched_params']):
             self.transition('done')
 ```

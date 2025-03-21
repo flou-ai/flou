@@ -138,7 +138,7 @@ You will need the instance ID and call:
     ```json title="Sample output"
     {
         "name": "sample_ltm",
-        "state": {
+        "store": {
             "_status": "active",
             ...
         },
@@ -172,7 +172,7 @@ You will need the instance ID and call:
 
     ```bash title="Sample output"
     ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ name       ┃ fqn                ┃ state   ┃ params ┃ structur┃ concurrent_instances ┃ created_at          ┃ uploaded_at         ┃
+    ┃ name       ┃ fqn                ┃ store   ┃ params ┃ structur┃ concurrent_instances ┃ created_at          ┃ uploaded_at         ┃
     ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
     │ sample_ltm │ flou.app.SampleLTM │ {       │ None   │ {       │ {                    │ 2024-09-01 21:32:43 │ 2024-09-01 21:32:43 │
     │            │                    │     ... │        │     ... │     ...              │                     │                     │

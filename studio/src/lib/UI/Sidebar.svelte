@@ -3,6 +3,18 @@
 	import SidebarNav from '$lib/UI/SidebarNav.svelte';
 	import { User } from 'phosphor-svelte';
 	import { routes } from '$lib/routes';
+	import { page } from '$app/stores';
+	import { getCurrentRoute } from '$lib/routes';
+
+	let selectedPath: string|undefined = undefined;
+
+	$: {
+		$page;
+		const route = getCurrentRoute();
+		if (route) {
+			selectedPath = route.path;
+		}
+	}
 </script>
 
 <div class="sidebar">
@@ -12,7 +24,7 @@
 		{#if route.title}
 			<p class="nav-title">{route.name}</p>
 		{:else if route.showInNav !== false && !route.section}
-			<SidebarNav route={route.path} disabled={route.disabled}>
+			<SidebarNav route={route.path} disabled={route.disabled} selected={route.path == selectedPath}>
 				<svelte:component this={route.icon} size="1.5rem" />
 				{route.name}
 			</SidebarNav>
