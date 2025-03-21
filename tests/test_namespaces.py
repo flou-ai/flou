@@ -44,7 +44,7 @@ def test_namespaces(session):
     db = get_db(session)
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
-    assert convert_lists_to_sets(doneLTM._state) == convert_lists_to_sets(
+    assert convert_lists_to_sets(doneLTM._store) == convert_lists_to_sets(
         {
             "_status": "active",
             "child1": {

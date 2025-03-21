@@ -84,7 +84,7 @@ async def get_ltm(
     ltm = db.load_ltm(ltm_id, snapshots=True, rollbacks=rollbacks)
     data = {
         "name": ltm.name,
-        "state": ltm._state,
+        "store": ltm._store,
         "snapshots": ltm._snapshots,
         "fqn": ltm.get_class_fqn(),
         "params": ltm.params,

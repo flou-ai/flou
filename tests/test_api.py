@@ -98,7 +98,7 @@ def test_transition(session):
 
     db = get_db(session)
     loaded_ltm = db.load_ltm(id)
-    assert loaded_ltm._get_ltm("payload.payload_state").state["some"] == "data"
+    assert loaded_ltm._get_ltm("payload.payload_state").store["some"] == "data"
 
 
 def test_rollback(session):

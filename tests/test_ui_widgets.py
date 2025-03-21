@@ -21,7 +21,7 @@ from .utils import patch_settings
 class WidgetTestLTM(LTM):
     name = "widget_test"
     
-    def get_initial_state(self):
+    def get_initial_store(self):
         return {
             "messages": [
                 {"user": "User", "content": "Hello", "timestamp": "2025-03-20T10:00:00Z"},
@@ -220,7 +220,7 @@ def test_empty_widgets():
     assert schema["widgets"] == []
 
 
-def test_widget_default_values():
+def test_widget_default_values(session):
     """Test that widget classes handle default values correctly"""
     
     # KeyValueWidget with defaults

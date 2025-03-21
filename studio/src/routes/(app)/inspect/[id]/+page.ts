@@ -28,7 +28,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
         if (rollbackIndex) {
             const rollback = ltmData.rollbacks[parseInt(rollbackIndex)];
             if (rollback) {
-                ltmData.state = rollback.state;
+                ltmData.store = rollback.store;
                 ltmData.snapshots = rollback.snapshots;
                 return rollback;
             } else {

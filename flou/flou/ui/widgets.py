@@ -93,7 +93,7 @@ class ButtonsWidget(Widget):
 
 
 class SubLTMWidget(Widget):
-    """Widget to display nested LTM state"""
+    """Widget to display nested LTM store"""
 
     def __init__(
         self,

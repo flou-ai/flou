@@ -8,20 +8,20 @@ class MyLTM(LTM):
 
     name = "root"
 
-    def get_initial_state(self):
-        initial_state = super().get_initial_state()
-        initial_state["my_list"] = []
-        return initial_state
+    def get_initial_store(self):
+        initial_store = super().get_initial_store()
+        initial_store["my_list"] = []
+        return initial_store
 
 
 def test_atomic_update(session):
 
     root = MyLTM()
     id = root.start()
-    root.atomic_state_append("my_list", "first")
-    root.atomic_state_append("my_list", "second")
+    root.atomic_store_append("my_list", "first")
+    root.atomic_store_append("my_list", "second")
 
-    assert root.state["my_list"] == ["first", "second"]
+    assert root.store["my_list"] == ["first", "second"]
 
 
 def test_copy(session):
@@ -42,7 +42,7 @@ def test_copy(session):
     assert copy.name == root.name
     assert copy.fqn == root.fqn
     assert copy.params == root.params
-    assert copy._state == root._state
+    assert copy._store == root._store
     assert copy._snapshots == root._snapshots
     assert copy._rollbacks == root._rollbacks
     assert copy.created_at == root.created_at

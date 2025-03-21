@@ -5,7 +5,7 @@
 	import LTMGraph from '$lib/UI/Graph/LTMGraph.svelte';
 	import SnapshotsTable from '$lib/Components/SnapshotsTable.svelte';
 	import Alert from '$lib/UI/Alert.svelte';
-	import State from '$lib/Components/State.svelte';
+	import Store from '$lib/Components/Store.svelte';
 	import SnapshotNav from '$lib/Components/SnapshotNav.svelte';
 	import WebSocket from '$lib/WebSocket.svelte';
 	import { TreeStructure, Pinwheel, Flask } from 'phosphor-svelte';
@@ -132,7 +132,7 @@
 		</div>
 		<div id="snapshot">
 			<Block>
-				<State fullSnapshot={snapshot} {currentSnapshot} ltmId={params.id} />
+				<Store fullSnapshot={snapshot} {currentSnapshot} ltmId={params.id} />
 			</Block>
 		</div>
 		<div id="graph">
@@ -142,7 +142,7 @@
 					<SnapshotNav {ltm} bind:snapshotIndex />
 					<LTMGraph
 						ltm={ltm.structure}
-						state={snapshot}
+						store={snapshot}
 						{currentSnapshot}
 						concurrent={ltm.concurrent_instances}
 					/>

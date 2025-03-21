@@ -44,7 +44,7 @@ class UpdatingInstructions(LLM, LTM):
         Previous writing instructions: ""
         """
 
-        previous_instructions = self.root.state["writing_instructions"]
+        previous_instructions = self.root.store["writing_instructions"]
         new_instructions = payload["writing_instructions"]
 
         update_instructions = self.client.beta.chat.completions.parse(
@@ -76,7 +76,7 @@ Now update the instructions with the new information.
             model="gpt-4o-mini",
             response_format=WritingInstructions,
         )
-        self.root.update_state(
+        self.root.update_store(
             {"writing_instructions": update_instructions.choices[0].message.parsed.writing_instructions}
         )
         self.transition("instructions_updated")
@@ -95,7 +95,7 @@ You are a children bedtime stories best seller author.
 
 Your editor, the father of your readers next story has the following
 instructions on how to write:
-{self.root.state["writing_instructions"]}
+{self.root.store["writing_instructions"]}
 """,
                 },
                 {
@@ -108,12 +108,12 @@ instructions on how to write:
             response_format=Story,
         )
 
-        stories = self.root.state["stories"]
+        stories = self.root.store["stories"]
         story = response.choices[0].message.parsed
         story_data = story.model_dump()
         story_data["date"] = datetime.now().isoformat()
         stories.append(story_data)
-        self.root.update_state({"stories": stories})
+        self.root.update_store({"stories": stories})
         self.transition("story_written", payload={"story": story_data})
 
 
@@ -137,7 +137,7 @@ class BedtimeStoryWriter(LTM):
         {"from": Idle, "label": "update_instructions", "to": UpdatingInstructions},
     ]
 
-    def get_initial_state(self):
+    def get_initial_store(self):
         return {
             "writing_instructions": "",
             "stories": [],

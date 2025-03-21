@@ -33,7 +33,7 @@ class SQLiteDatabase(BaseDatabase):
 
         return ltms
 
-    def _update_state(self, ltm_id, updates, snapshot):
+    def _update_store(self, ltm_id, updates, snapshot):
 
         # jsonb_set needs nested calls to apply several values
         update_pairs = []
@@ -46,7 +46,7 @@ class SQLiteDatabase(BaseDatabase):
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=func.json_set(LTM.state, *update_pairs),
+                    store=func.json_set(LTM.store, *update_pairs),
                     snapshots=func.json_insert(
                         LTM.snapshots, "$[#]", func.JSON(json_dumps(snapshot))
                     ),
@@ -54,13 +54,13 @@ class SQLiteDatabase(BaseDatabase):
             )
             session.commit()
 
-    def _rollback(self, ltm_id, new_state, new_snapshots, new_rollback):
+    def _rollback(self, ltm_id, new_store, new_snapshots, new_rollback):
         with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=new_state,
+                    store=new_store,
                     snapshots=new_snapshots,
                     rollbacks=func.json_insert(
                         LTM.rollbacks, "$[#]", func.JSON(json_dumps(new_rollback))
@@ -77,11 +77,11 @@ class SQLiteDatabase(BaseDatabase):
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=func.json_insert(
-                        LTM.state, f"{key}[#]", func.JSON(json_dumps(value))
+                    store=func.json_insert(
+                        LTM.store, f"{key}[#]", func.JSON(json_dumps(value))
                     )
                 )
-                .returning(func.json_extract(LTM.state, key))
+                .returning(func.json_extract(LTM.store, key))
             )
             result = json.loads(result.scalar_one())
             session.commit()

@@ -15,7 +15,7 @@
 
 	// attributes
 	export let ltm;
-	export let state: any;
+	export let store: any;
 	export let concurrent: any;
 	export let currentSnapshot: any;
 	export let cy: cytoscape.Core;
@@ -97,7 +97,7 @@
 		tooltip = new Tooltip({
 			target: tooltipLayer.node,
 			props: {
-				...{ state, concurrent, updateRoot, currentRootInstance },
+				...{ store, concurrent, updateRoot, currentRootInstance },
 				node: currentSelection,
 				transform: ''
 			}
@@ -247,13 +247,13 @@
 				node.move({ parent: node.data('_parent') });
 				node.data('_parent', undefined);
 			}
-			node.data('status', getNodeStatus(state.state, ltm, node.data().id, currentRootInstance));
+			node.data('status', getNodeStatus(store.store, ltm, node.data().id, currentRootInstance));
 
 			// check if we are executing the node
 			let executing = false;
-			if (state.reason === 'execute') {
+			if (store.reason === 'execute') {
 				const pattern = node.data('id');
-				const target = state.item.fqn;
+				const target = store.item.fqn;
 				const fqnMatch = matchFQN(pattern, target);
 
 				executing = fqnMatch.isMatch;
@@ -265,9 +265,9 @@
 		cy.edges().forEach((edge) => {
 			// check if we are executing the edge
 			let executing = false;
-			if (state.reason === 'transition') {
+			if (store.reason === 'transition') {
 				const pattern = edge.data('namespace');
-				const target = state.item.namespace;
+				const target = store.item.namespace;
 				const namespaceMatch = matchFQN(pattern, target);
 
 				// for multiple edges with the same label/namespace we need to
@@ -277,7 +277,7 @@
 				currentSnapshot.patch.some((patch: any) => {
 					const path = `${fqnToJsonPatchPath(edge.source().data().id)}_status`;
 					if (patch.op === 'replace' && patch.path === path && patch.value === 'finished') {
-						executing = edge.data('label') === state.item.label && namespaceMatch.isMatch;
+						executing = edge.data('label') === store.item.label && namespaceMatch.isMatch;
 					}
 				});
 				console.log('executing', executing);
@@ -304,7 +304,7 @@
 	};
 	$: {
 		if (tooltip) {
-			tooltip.$set({ state });
+			tooltip.$set({ store });
 		}
 	}
 
@@ -322,8 +322,8 @@
 		updateGraph();
 	}
 
-	// Change of state
-	$: state, updateGraph();
+	// Change of store
+	$: store, updateGraph();
 
 	// Animations
 

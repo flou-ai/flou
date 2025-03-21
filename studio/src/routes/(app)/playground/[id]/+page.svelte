@@ -8,7 +8,7 @@
     import SnapshotNav from '$lib/Components/SnapshotNav.svelte';
     import Rollabacks from '$lib/Components/Rollbacks.svelte';
     import WebSocket from '$lib/WebSocket.svelte';
-    import State from '$lib/Components/State.svelte';
+    import Store from '$lib/Components/Store.svelte';
     import { formatDate } from '$lib/utils';
     import { PUBLIC_API_BASE_URL } from '$env/static/public';
     import { TreeStructure, Flask } from 'phosphor-svelte';
@@ -98,7 +98,7 @@
                     <TransitionForm
                         ltmId={params.id}
                         disabled={snapshotIndex !== ltm.snapshots.length - 1}
-                        state={snapshot}
+                        store={snapshot}
                         {cy}
                     />
                 </div>
@@ -122,7 +122,7 @@
         <div id="snapshot">
             <Block>
                 <div>
-                    <State fullSnapshot={snapshot} {currentSnapshot} ltmId={params.id} />
+                    <Store fullSnapshot={snapshot} {currentSnapshot} ltmId={params.id} />
                 </div>
             </Block>
         </div>
@@ -133,7 +133,7 @@
                     <SnapshotNav {ltm} bind:snapshotIndex />
                     <LTMGraph
                         ltm={ltm.structure}
-                        state={snapshot}
+                        store={snapshot}
                         {currentSnapshot}
                         concurrent={ltm.concurrent_instances}
                         bind:cy

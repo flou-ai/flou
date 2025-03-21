@@ -12,77 +12,77 @@ from flou.engine import get_engine
 from flou.utils import to_set, get_fqn
 
 
-class LTMState:
+class LTMStore:
     """
-    Abstracts all the state logic for an LTM
+    Abstracts all the store logic for an LTM
     """
 
-    _state = None  # only used by root to save the global state
-    _initial_state = (
+    _store = None  # only used by root to save the global store
+    _initial_store = (
         None  # shouldn't be updated, it's used for calculating snapshots only
     )
     _snapshots = None
     _rollbacks = None
 
     @property
-    def state(self):
+    def store(self):
         """
-        State shouldn't be updated directly, use `update_state` instead.
+        Store shouldn't be updated directly, use `update_store` instead.
         """
-        # remove the root name from the fqn as it's directly accessible from the _state
-        return get_fqn(self.root._state, self.fqn.partition(".")[2])
+        # remove the root name from the fqn as it's directly accessible from the _store
+        return get_fqn(self.root._store, self.fqn.partition(".")[2])
 
-    def _init_state(self, recursive=False):
+    def _init_store(self, recursive=False):
         try:
             self.fqn
         except ValueError:  # if it's a concurrent ltm, skip it
             return
 
-        def get_initial_state_with_status():
+        def get_initial_store_with_status():
             # the _status can be init, queued, active, finished, error (retrying or not)
-            initial = self.get_initial_state()
+            initial = self.get_initial_store()
             initial["_status"] = "init"
             return initial
 
-        if self.state is None:
+        if self.store is None:
             if self.parent:
-                state = self.root._state
+                store = self.root._store
                 for name in self.fqn.partition(".")[2].split(".")[:-1]:
-                    state = state[name]
+                    store = store[name]
 
-                state[self.get_name()] = get_initial_state_with_status()
+                store[self.get_name()] = get_initial_store_with_status()
                 if self.params:  # if concurrent
-                    # update the state so that it creates the key for concurrent states
-                    self.parent.update_state({self.get_name(): self.state})
+                    # update the store so that it creates the key for concurrent states
+                    self.parent.update_store({self.get_name(): self.store})
             else:
-                self._state = get_initial_state_with_status()
+                self._store = get_initial_store_with_status()
 
         if recursive and self._sub_ltms:
             for ltm in self._sub_ltms.values():
-                ltm._init_state(recursive=True)
+                ltm._init_store(recursive=True)
 
-    def get_initial_state(self):
+    def get_initial_store(self):
         """
-        Returns the intial state including the orchestration state
+        Returns the initial store including the orchestration status
 
-        All internal states start with _
+        All internal status start with _
         """
         return {}
 
-    def update_state(self, updates):
+    def update_store(self, updates):
         """
-        Updates the state, creating or overriding a previous key
+        Updates the store, creating or overriding a previous key
 
-        `updates` must be dict with the relative qualifed name of the state as
-        keys and their values. e.g.: `self.update_state({'key.subkey': 'value'})`
+        `updates` must be dict with the relative qualifed name of the store as
+        keys and their values. e.g.: `self.update_store({'key.subkey': 'value'})`
         """
-        # Updates the local state and add to the queue in `root._updates_queue`
+        # Updates the local store and add to the queue in `root._updates_queue`
 
         if self.root._updates_queue is None:
             self.root._updates_queue = []
         self.root._updates_queue.append((self.fqn, updates))
 
-        # update local state
+        # update local store
 
         # remove root from base key
         base_key = self.fqn.partition(".")[2]
@@ -90,7 +90,7 @@ class LTMState:
         # update each key fqn
         for key, value in updates.items():
             # get the base ltm key
-            obj = self.root._state
+            obj = self.root._store
             # enter each subkey
             subkeys, _, innerkey = key.rpartition(".")
             subkeys = f"{base_key}.{subkeys}".strip(".")
@@ -100,20 +100,20 @@ class LTMState:
             # save in the last subkey
             obj[innerkey] = value
 
-    def atomic_state_append(self, key, value):
+    def atomic_store_append(self, key, value):
         """
         Inserts a value into a list returning the new value immediately and
         atomically.
 
-        This should only be used where concurrent state updates might clash.
+        This should only be used where concurrent store updates might clash.
 
-        It's different from `update_state` which is more general and collects
+        It's different from `update_store` which is more general and collects
         all updates and executes them after `run` finishes all together in one
         call.
 
         `key` must be an initialized list already present in the db.
         """
-        self.state[key].append(value)
+        self.store[key].append(value)
         db = get_db()
         return db.atomic_append(self, key, value)
 
@@ -133,8 +133,8 @@ class LTMManager:
         Initialize all the sub ltms
         """
 
-        # start by initializing the current ltm state
-        self._init_state()
+        # start by initializing the current ltm store
+        self._init_store()
 
         # gather all sub LTMs (init + transitions)
         _all_ltms = to_set(deepcopy(self.init))
@@ -163,7 +163,7 @@ class LTMManager:
         """
         Get the Fully Qualified Name of the LTM
 
-        An LTM FQN is dotted syntax of a state location in the LTM hierarchy:
+        An LTM FQN is dotted syntax of a store location in the LTM hierarchy:
 
             "{parent_fqn}.{name}"
 
@@ -210,13 +210,13 @@ class LTMManager:
                 f"Can't transition as I don't have any sub ltms: {label}"
             )
 
-        # get all the active active states in a set as a (class, params) tuple
-        active_states = set()
+        # get all the active nodes in a set as a (class, params) tuple
+        active_nodes = set()
 
-        for key, value in self.state.items():
+        for key, value in self.store.items():
             # as we store the _sub_ltms with unformatted params (we share the
-            # class between instances) we need to get the "spawned" ltms from the state
-            # checking each state key with the _sub_ltm names
+            # class between instances) we need to get the "spawned" ltms from the store
+            # checking each store key with the _sub_ltm names
 
             # if it's a sub_ltm key (has _status) and it's active
             if isinstance(value, dict) and value.get("_status") == "active":
@@ -224,13 +224,13 @@ class LTMManager:
                 for name, ltm in self._sub_ltms.items():
                     result = parse.parse(name, key)
                     if result:
-                        # it's a match, add to the active states the class and
+                        # it's a match, add to the active nodes the class and
                         # the formatted_name tuple
-                        active_states.add((ltm.__class__, key))
+                        active_nodes.add((ltm.__class__, key))
 
-        # get the states that remain active, remove the ones that transition
-        remaining_states = deepcopy(active_states)
-        new_states = set()
+        # get the nodes that remain active, remove the ones that transition
+        remaining_nodes = deepcopy(active_nodes)
+        new_nodes = set()
 
         one_transitioned = False
 
@@ -247,8 +247,8 @@ class LTMManager:
 
             from_intersection = set()
 
-            # get all the remaining states that are in the from set of the transition
-            for ltm_class, ltm_fname in remaining_states:
+            # get all the remaining nodes that are in the from set of the transition
+            for ltm_class, ltm_fname in remaining_nodes:
 
                 # for every params (used in forking/spawning)
                 for param in params:
@@ -258,43 +258,43 @@ class LTMManager:
                         klass_fname = klass.name.format(**param)
 
                         if ltm_fname == klass_fname:
-                            # add to from_intersection and the new_states
+                            # add to from_intersection and the new_nodes
                             from_intersection.add((klass, ltm_fname))
                             for to_ltm_class in to_set(transition["to"]):
                                 to_fname = to_ltm_class.name.format(**param)
-                                new_states.add((to_ltm_class, to_fname))
+                                new_nodes.add((to_ltm_class, to_fname))
 
             if not from_intersection:
                 continue
 
-            remaining_states -= from_intersection
+            remaining_nodes -= from_intersection
             one_transitioned = True
 
-        if new_states:
+        if new_nodes:
 
-            # execute all the new_states
-            for ltm_class, fname in new_states:
+            # execute all the new_nodes
+            for ltm_class, fname in new_nodes:
 
                 result = parse.parse(ltm_class.name, fname)
                 new_params = result.named
                 ltm = self._sub_ltms[ltm_class.name]
                 ltm._set_params(new_params)
-                ltm._init_state(recursive=True)
+                ltm._init_store(recursive=True)
                 self.execute(ltm, payload)
 
-            # move all the transitioned states to "finished"
-            transitioned_states = active_states - remaining_states
-            for ltm_class, fname in transitioned_states:
+            # move all the transitioned nodes to "finished"
+            transitioned_nodes = active_nodes - remaining_nodes
+            for ltm_class, fname in transitioned_nodes:
 
                 result = parse.parse(ltm_class.name, fname)
                 transitioned_params = result.named
 
                 sub_ltm = self._sub_ltms[ltm_class.name]
                 sub_ltm._set_params(transitioned_params)
-                sub_ltm.update_state({"_status": "finished"})
+                sub_ltm.update_store({"_status": "finished"})
 
         # transition every sub ltm recursively
-        for key in self.state.keys():
+        for key in self.store.keys():
             # check if the key is a sub_ltm
             for name, ltm in self._sub_ltms.items():
                 result = parse.parse(name, key)
@@ -320,7 +320,7 @@ class LTMManager:
         self.root._execute_queue.append(
             ({"item_id": uuid.uuid4(), "fqn": ltm.fqn, "payload": payload})
         )
-        ltm.update_state({"_status": "queued"})
+        ltm.update_store({"_status": "queued"})
 
     @classmethod
     def get_class_fqn(klass):
@@ -413,7 +413,7 @@ class LTMManager:
         if self._sub_ltms:
             for name, sub_ltm in self._sub_ltms.items():
                 if "{" in name:
-                    for key in self.state.keys():
+                    for key in self.store.keys():
                         result = parse.parse(name, key)
                         if result:
                             sub_ltm._set_params(result.named)
@@ -452,7 +452,7 @@ class LTMManager:
         """
         Get a child LTM by its Fully Qualified Name
 
-        In the case of concurrent states, fill the appropiate params in each LTM
+        In the case of concurrent states, fill the appropriate params in each LTM
         """
 
         self._init_ltms()
@@ -470,7 +470,7 @@ class LTMManager:
         return ltm
 
 
-class LTM(LTMManager, LTMState):
+class LTM(LTMManager, LTMStore):
     name = None
     init = None
     transitions = None
@@ -487,8 +487,8 @@ class LTM(LTMManager, LTMState):
         self,
         parent=None,
         id=None,
-        state=None,
-        internal_state=None,
+        store=None,
+        internal_store=None,
         snapshots=None,
         rollbacks=None,
         playground=None,
@@ -500,8 +500,8 @@ class LTM(LTMManager, LTMState):
         self.parent = parent
         self.id = id
         self.params = params
-        self._state = state
-        self._initial_state = deepcopy(state) or {}
+        self._store = store
+        self._initial_store = deepcopy(store) or {}
         self._snapshots = snapshots
         self._rollbacks = rollbacks
         self._playground = playground
@@ -511,7 +511,7 @@ class LTM(LTMManager, LTMState):
 
     def run(self, payload=None) -> int:
         """
-        The code to run when the state is executed.
+        The code to run when the LTM is executed.
 
         For subltms this method should run all the init ltms.
 

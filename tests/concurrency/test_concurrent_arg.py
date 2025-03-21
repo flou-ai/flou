@@ -34,8 +34,8 @@ def test_concurrent_arg(session):
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 6
-    assert doneLTM._state['concurrent_1'] == {'_status': 'active'}
-    assert doneLTM._state['concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['concurrent_2'] == {'_status': 'active'}
 
 
 # Test two concurrent states launched by a transition and then only one transitions
@@ -68,11 +68,11 @@ def test_multiple_concurrent_arg(session):
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 6
-    assert doneLTM._state['first_concurrent_1'] == {'_status': 'active'}
-    assert doneLTM._state['first_concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['first_concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['first_concurrent_2'] == {'_status': 'active'}
 
-    assert 'second_concurrent_1' not in doneLTM._state
-    assert 'second_concurrent_2' not in doneLTM._state
+    assert 'second_concurrent_1' not in doneLTM._store
+    assert 'second_concurrent_2' not in doneLTM._store
 
     engine = get_engine()
     engine.transition(root, "next_{kwarg}", params=[{'kwarg': '1'}])
@@ -82,20 +82,20 @@ def test_multiple_concurrent_arg(session):
 
     assert len(doneLTM._snapshots) == 8
 
-    assert doneLTM._state['first_concurrent_1'] == {'_status': 'finished'}
-    assert doneLTM._state['first_concurrent_2'] == {'_status': 'active'}
-    assert doneLTM._state['second_concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['first_concurrent_1'] == {'_status': 'finished'}
+    assert doneLTM._store['first_concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['second_concurrent_1'] == {'_status': 'active'}
 
-    assert 'second_concurrent_2' not in doneLTM._state
+    assert 'second_concurrent_2' not in doneLTM._store
 
     engine = get_engine()
     engine.transition(doneLTM, "next_{kwarg}", params=[{'kwarg': '2'}])
 
     doneLTM = db.load_ltm(root.id, snapshots=True)
-    assert doneLTM._state['first_concurrent_1'] == {'_status': 'finished'}
-    assert doneLTM._state['first_concurrent_2'] == {'_status': 'finished'}
-    assert doneLTM._state['second_concurrent_1'] == {'_status': 'active'}
-    assert doneLTM._state['second_concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['first_concurrent_1'] == {'_status': 'finished'}
+    assert doneLTM._store['first_concurrent_2'] == {'_status': 'finished'}
+    assert doneLTM._store['second_concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['second_concurrent_2'] == {'_status': 'active'}
 
     # Now try to transition both of them at the same time
 
@@ -111,7 +111,7 @@ def test_multiple_concurrent_arg(session):
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 9
-    assert doneLTM._state['first_concurrent_1'] == {'_status': 'finished'}
-    assert doneLTM._state['first_concurrent_2'] == {'_status': 'finished'}
-    assert doneLTM._state['second_concurrent_1'] == {'_status': 'active'}
-    assert doneLTM._state['second_concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['first_concurrent_1'] == {'_status': 'finished'}
+    assert doneLTM._store['first_concurrent_2'] == {'_status': 'finished'}
+    assert doneLTM._store['second_concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['second_concurrent_2'] == {'_status': 'active'}

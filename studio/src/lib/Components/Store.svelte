@@ -35,12 +35,12 @@
 
 <Tabs>
 	<Tab title="Custom UI">
-    <LTMWidgets {ltmId} state={fullSnapshot.store || fullSnapshot.state} />
+    <LTMWidgets {ltmId} store={fullSnapshot.store} />
   </Tab>
 	<Tab title="Raw Store Diff">
 		<JsonView json={currentSnapshot?.patch} />
 	</Tab>
 	<Tab title="Full Raw Store">
-		<JsonView json={fullSnapshot.store || fullSnapshot.state} />
+		<JsonView json={fullSnapshot.store} />
 	</Tab>
 </Tabs>

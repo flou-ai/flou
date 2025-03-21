@@ -33,5 +33,5 @@ def test_concurrent_self_loop(session):
     doneLTM = db.load_ltm(root.id, snapshots=True)
 
     assert len(doneLTM._snapshots) == 9
-    assert doneLTM._state['concurrent_1'] == {'_status': 'active'}
-    assert doneLTM._state['concurrent_2'] == {'_status': 'active'}
+    assert doneLTM._store['concurrent_1'] == {'_status': 'active'}
+    assert doneLTM._store['concurrent_2'] == {'_status': 'active'}

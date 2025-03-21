@@ -5,7 +5,7 @@
 	import { FlowArrow } from 'phosphor-svelte';
 
 	export let ltmId;
-	export let state;
+	export let store;
 	export let disabled;
 	export let cy;
 
@@ -46,7 +46,7 @@
 	};
 
 	$: {
-		state;
+		store;
 		updateTransitions(cy);
 	}
 

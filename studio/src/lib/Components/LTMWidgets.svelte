@@ -6,7 +6,7 @@
   import '../widgets'; // Import to register widgets
   
   export let ltmId: string;
-  export let state: any;
+  export let store: any;
   
   // Store for UI schema
   const uiSchema = writable<any>({});
@@ -39,7 +39,7 @@
       <div class="widget-container">
         <WidgetRenderer 
           {widget} 
-          data={widget.field ? state[widget.field] : state} 
+          data={widget.field ? store[widget.field] : store} 
           {ltmId} 
         />
       </div>

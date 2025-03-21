@@ -25,8 +25,8 @@ class DummyEngine(BaseEngine):
             ltm = ltm.root._get_ltm(fqn)
             ltm.run(payload)
 
-            ltm.update_state({"_status": "active"})
-            db.update_state(
+            ltm.update_store({"_status": "active"})
+            db.update_store(
                 ltm,
                 "execute",
                 item={"item_id": item_id, "fqn": ltm.fqn, "payload": payload},
@@ -64,8 +64,8 @@ class DummyEngine(BaseEngine):
 
             ltm.root.perform_transition(label, params, namespace, payload)
 
-            # update the db state with all updates at once
-            db.update_state(
+            # update the db store with all updates at once
+            db.update_store(
                 ltm,
                 "transition",
                 item={

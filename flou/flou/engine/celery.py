@@ -52,11 +52,11 @@ def execute(ltm_id, item_id, fqn, payload=None):
         # run the state directly with no celery override
         ltm.run(payload)
 
-        # update the state to executed
-        ltm.update_state({"_status": "active"})
+        # update the store status to executed
+        ltm.update_store({"_status": "active"})
 
-        # update the db state with all updates at once
-        db.update_state(
+        # update the db store with all updates at once
+        db.update_store(
             ltm,
             "execute",
             item={"item_id": item_id, "fqn": ltm.fqn, "payload": payload},
@@ -94,8 +94,8 @@ def transition(ltm_id, item_id, label, params=None, namespace=None, payload=None
 
         ltm.perform_transition(label, params, namespace, payload)
 
-        # update the db state with all updates at once
-        db.update_state(
+        # update the db store with all updates at once
+        db.update_store(
             ltm,
             "transition",
             item={

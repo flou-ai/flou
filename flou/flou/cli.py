@@ -150,7 +150,7 @@ def get(ltm_id: int):
     ltm = db.load_ltm(ltm_id)
     table.add_column("name")
     table.add_column("fqn")
-    table.add_column("state")
+    table.add_column("store")
     table.add_column("params")
     table.add_column("structure")
     table.add_column("concurrent_instances")
@@ -159,7 +159,7 @@ def get(ltm_id: int):
     table.add_row(
         str(ltm.name),
         ltm.get_class_fqn(),
-        json.dumps(ltm._state, indent=4),
+        json.dumps(ltm._store, indent=4),
         str(ltm.params),
         str(ltm.as_json(structure=True)),
         json.dumps(ltm.concurrent_instances_as_json(), indent=4),

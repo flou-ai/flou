@@ -67,7 +67,7 @@ class BaseDatabase:
                     name=ltm.name,
                     fqn=fqn,
                     kwargs=ltm.params,
-                    state=ltm.state,
+                    store=ltm.store,
                     snapshots=[snapshot],
                     playground=playground,
                 )
@@ -79,7 +79,7 @@ class BaseDatabase:
                 existing_ltm.name = ltm.name
                 existing_ltm.fqn = fqn
                 existing_ltm.kwargs = ltm.params
-                existing_ltm.state = ltm.state
+                existing_ltm.store = ltm.store
                 existing_ltm.snapshots = [snapshot]
                 existing_ltm.playground = playground
                 session.commit()
@@ -112,7 +112,7 @@ class BaseDatabase:
                 LTM.id,
                 LTM.fqn,
                 LTM.kwargs,
-                LTM.state,
+                LTM.store,
                 LTM.created_at,
                 LTM.updated_at,
             ]
@@ -128,7 +128,7 @@ class BaseDatabase:
 
             args = {
                 "id": pk,
-                "state": ltm_data.state,
+                "store": ltm_data.store,
                 "created_at": ltm_data.created_at,
                 "updated_at": ltm_data.updated_at,
                 "params": ltm_data.kwargs,
@@ -152,7 +152,7 @@ class BaseDatabase:
                 fqn=ltm.fqn,
                 structure=ltm.structure,
                 kwargs=ltm.kwargs,
-                state=ltm.state,
+                store=ltm.store,
                 snapshots=ltm.snapshots,
                 playground=True,
                 source_id=pk,
@@ -165,7 +165,7 @@ class BaseDatabase:
             last_id = new_ltm.id
         return last_id
 
-    def _update_state(self, ltm_id, updates, snapshot):
+    def _update_store(self, ltm_id, updates, snapshot):
 
         # FIXME: we were previously using nested `jsonb_set` but on large inputs
         # we surpassed python's recursion limit. The way to go is using postgres
@@ -180,7 +180,7 @@ class BaseDatabase:
             return path
 
         sql_updates = {
-            f"state{to_brackets(path)}": json_dumps(value)
+            f"store{to_brackets(path)}": json_dumps(value)
             for path, value in updates
         }
         update_query = text(
@@ -213,7 +213,7 @@ class BaseDatabase:
             return path
 
         sql_updates = {
-            literal_column(f"state{to_brackets(path)}") : cast(value, JSONB)
+            literal_column(f"store{to_brackets(path)}") : cast(value, JSONB)
             for path, value in updates
         }
 
@@ -234,18 +234,18 @@ class BaseDatabase:
         return
 
         # nested jsonb_set implementation: works for small amounts of updates
-        state_value = LTM.state
+        store_value = LTM.store
         for path, value in updates:
             key = path.split(".")
             # key = ARRAY([path_element for path_element in key], String)
-            state_value = func.jsonb_set(state_value, key, cast(value, JSONB))
+            store_value = func.jsonb_set(store_value, key, cast(value, JSONB))
 
         with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=state_value,
+                    store=store_value,
                     snapshots=LTM.snapshots + [snapshot],
                     # snapshots=func.jsonb_insert(
                     #     LTM.snapshots, "{-1}", json_dumps(snapshot), True
@@ -254,7 +254,7 @@ class BaseDatabase:
             )
             session.commit()
 
-    def update_state(self, ltm, reason, item=None):
+    def update_store(self, ltm, reason, item=None):
 
         updates = ltm.root._updates_queue
 
@@ -271,7 +271,7 @@ class BaseDatabase:
 
         snapshot = self.calculate_snapshot(ltm.root, reason, item)
 
-        self._update_state(ltm.root.id, prepared_updates, snapshot)
+        self._update_store(ltm.root.id, prepared_updates, snapshot)
 
         # add snapshot to ltm if we have them
         if ltm.root._snapshots:
@@ -291,8 +291,8 @@ class BaseDatabase:
         )
 
     def calculate_snapshot(self, ltm, reason, item):
-        patch = jsonpatch.make_patch(ltm._initial_state, ltm._state).patch
-        ltm._initial_state = deepcopy(ltm._state)
+        patch = jsonpatch.make_patch(ltm._initial_store, ltm._store).patch
+        ltm._initial_store = deepcopy(ltm._store)
         snapshot = {
             "time": f"{datetime.now()}",
             "reason": reason,
@@ -303,24 +303,24 @@ class BaseDatabase:
         }
         return snapshot
 
-    def recreate_state_from_snapshot(self, ltm, snapshot_index):
+    def recreate_store_from_snapshot(self, ltm, snapshot_index):
         """
-        Recreate a previous state from the list of snapshots up to (including) `snapshot_index`
+        Recreate a previous store from the list of snapshots up to (including) `snapshot_index`
         """
-        recreated_state = {}
+        recreated_store = {}
 
         for snapshot in ltm._snapshots[: snapshot_index + 1]:
-            recreated_state = jsonpatch.apply_patch(recreated_state, snapshot["patch"])
+            recreated_store = jsonpatch.apply_patch(recreated_store, snapshot["patch"])
 
-        return recreated_state
+        return recreated_store
 
-    def _rollback(self, ltm_id, new_state, new_snapshots, new_rollback):
+    def _rollback(self, ltm_id, new_store, new_snapshots, new_rollback):
         with self.get_session() as session:
             session.execute(
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=new_state,
+                    store=new_store,
                     snapshots=new_snapshots,
                     rollbacks=LTM.rollbacks + [new_rollback],
                 )
@@ -332,7 +332,7 @@ class BaseDatabase:
         Rollback the LTM to a previous snapshot.
 
         The snapshot_index is zero indexed and is included.
-        Adds the current state & snapshots to the rollbacks.
+        Adds the current store & snapshots to the rollbacks.
         """
 
         if snapshot_index is None and rollback_index is None:
@@ -344,7 +344,7 @@ class BaseDatabase:
 
         new_rollback = {
             "time": f"{datetime.now()}",
-            "state": ltm._state,
+            "store": ltm._store,
             "snapshots": ltm._snapshots,
             "reason": reason,
         }
@@ -357,21 +357,21 @@ class BaseDatabase:
             new_snapshots = ltm._snapshots[: snapshot_index + 1]
             # calculate snapshot until that point
             if snapshot_index == -1:  # if restart
-                ltm._state = None
+                ltm._store = None
                 ltm._init_ltms()
-                new_state = ltm._state
+                new_store = ltm._store
             else:
-                new_state = self.recreate_state_from_snapshot(ltm, snapshot_index)
+                new_store = self.recreate_store_from_snapshot(ltm, snapshot_index)
         else:
             new_snapshots = ltm._rollbacks[rollback_index]["snapshots"]
-            new_state = ltm._rollbacks[rollback_index]["state"]
+            new_store = ltm._rollbacks[rollback_index]["store"]
             if not reason:
                 reason = "recover rollback"
 
-        self._rollback(ltm.id, new_state, new_snapshots, new_rollback)
+        self._rollback(ltm.id, new_store, new_snapshots, new_rollback)
 
         ltm._snapshots = new_snapshots
-        ltm._state = new_state
+        ltm._store = new_store
         if not ltm._rollbacks:
             ltm._rollbacks = []
         ltm._rollbacks.append(new_rollback)
@@ -387,8 +387,8 @@ class BaseDatabase:
             ),
         )
 
-        # set _initial_state to be used in snapshot calculation
-        ltm._initial_state = {}
+        # set _initial_store to be used in snapshot calculation
+        ltm._initial_store = {}
 
         from flou.engine import get_engine
         engine = get_engine()
@@ -409,11 +409,11 @@ class BaseDatabase:
                 update(LTM)
                 .where(LTM.id == ltm_id)
                 .values(
-                    state=func.jsonb_insert(
-                        LTM.state, path_last_element, cast(value, JSONB), True
+                    store=func.jsonb_insert(
+                        LTM.store, path_last_element, cast(value, JSONB), True
                     )
                 )
-                .returning(func.jsonb_extract_path(LTM.state, *path))
+                .returning(func.jsonb_extract_path(LTM.store, *path))
             )
             result = result.scalar_one()
             session.commit()

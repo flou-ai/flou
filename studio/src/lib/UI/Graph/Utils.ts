@@ -1,4 +1,4 @@
-export let getDottedPath = (state: any, fqn: string, rootInstance: string | null = null) => {
+export let getDottedPath = (store: any, fqn: string, rootInstance: string | null = null) => {
     const keys = fqn.split('.');
     if (rootInstance) {
         const rootKeys = rootInstance.split('.');
@@ -10,7 +10,7 @@ export let getDottedPath = (state: any, fqn: string, rootInstance: string | null
     }
 
     keys.shift(); // discard root fqn
-    let currentValue = state;
+    let currentValue = store;
 
     for (const key of keys) {
         if (currentValue[key] === undefined) {
@@ -39,24 +39,24 @@ export let getFQNStructure = (structure: any, keys: string[]) => {
     return currentValue;
 }
 
-export let getNodeStatus = (state: any, structure: any, fqn: string, currentRootInstance: string) => {
-    let nodeState = getDottedPath(state, fqn, currentRootInstance);
+export let getNodeStatus = (store: any, structure: any, fqn: string, currentRootInstance: string) => {
+    let nodeData = getDottedPath(store, fqn, currentRootInstance);
 
     let parentFQNKeys = fqn.split('.');
     parentFQNKeys.pop(); // remove last key to get parent
     let parentTransitions = getFQNStructure(structure, parentFQNKeys).transitions;
-    if (nodeState) {
-        if (nodeState._status === 'active') {
+    if (nodeData) {
+        if (nodeData._status === 'active') {
             // node is active
             let nodeStructure = getFQNStructure(structure, fqn.split('.'));
             if (nodeStructure.ltms) { // is parent
                 // check if every child is 'finished'
-                if (nodeStructure.ltms.every((ltm: any) => getNodeStatus(state, structure, ltm.fqn, currentRootInstance) === 'finished')) {
+                if (nodeStructure.ltms.every((ltm: any) => getNodeStatus(store, structure, ltm.fqn, currentRootInstance) === 'finished')) {
                     return 'finished';
                 }
             }
         }
-        return nodeState._status;
+        return nodeData._status;
     }
 }
 

@@ -67,12 +67,12 @@
     };
     let getSnapshotFromIndex: any = (index: number) => {
         let full_snapshot: any = {
-            state: {},
+            store: {},
             executeQueue: [],
             transitionsQueue: []
         };
         for (let i = 0; i <= index; i++) {
-            jsonpatch.applyPatch(full_snapshot['state'], jsonpatch.deepClone(ltm.snapshots[i]['patch']));
+            jsonpatch.applyPatch(full_snapshot['store'], jsonpatch.deepClone(ltm.snapshots[i]['patch']));
             full_snapshot.executeQueue = addItemsToQueue(
                 full_snapshot.executeQueue,
                 ltm.snapshots[i]['execute_queue']

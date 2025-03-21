@@ -22,13 +22,13 @@ class ToDoneConcurrentState(LTM):
 class WaitForAllStates(LTM):
     name = 'wait_for_all'
 
-    def get_initial_state(self):
-        initial = super().get_initial_state()
+    def get_initial_store(self):
+        initial = super().get_initial_store()
         initial['done'] = []
         return initial
 
     def run(self, payload=None):
-        done = self.atomic_state_append('done', payload)
+        done = self.atomic_store_append('done', payload)
         if convert_lists_to_sets(done) == convert_lists_to_sets(self.parent.launch_params):
             self.transition('done_all')
 
@@ -61,4 +61,4 @@ def test_join(session):
 
     done_LTM = db.load_ltm(root.id)
 
-    assert done_LTM._state['done'] == {'_status': 'active'}
+    assert done_LTM._store['done'] == {'_status': 'active'}
